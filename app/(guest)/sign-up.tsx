@@ -1,14 +1,22 @@
 import { Link, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
 import {
   validateEmail,
-  validateNewPassword,
+  validatePassword,
   validatePasswordsMatch,
 } from "@/src/features/auth/validation";
+import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
+import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
+import { FormTextField } from "@/src/shared/components/form/FormTextField";
+import { formStyles } from "@/src/shared/components/form/formStyles";
+import { resetToOnboardingChoose } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
+import { useFormValidation } from "@/src/shared/validation/useFormValidation";
+
+type SignUpField = "email" | "password" | "repeatPassword";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -17,83 +25,83 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState({ email: false, password: false, repeatPassword: false });
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const emailError = useMemo(() => validateEmail(email), [email]);
-  const passwordError = useMemo(() => validateNewPassword(password), [password]);
-  const repeatPasswordError = useMemo(
-    () => validatePasswordsMatch(password, repeatPassword),
-    [password, repeatPassword],
+  const validateRepeatPassword = useCallback(
+    (value: string) => validatePasswordsMatch(password, value),
+    [password],
   );
 
-  const canContinue =
-    !isSubmitting && !emailError && !passwordError && !repeatPasswordError;
+  const fieldsConfig = useMemo(
+    () => ({
+      email: { value: email, validate: validateEmail },
+      password: { value: password, validate: validatePassword },
+      repeatPassword: { value: repeatPassword, validate: validateRepeatPassword },
+    }),
+    [email, password, repeatPassword, validateRepeatPassword],
+  );
 
-  const showEmailError = touched.email && !!emailError;
-  const showPasswordError = touched.password && !!passwordError;
-  const showRepeatPasswordError = touched.repeatPassword && !!repeatPasswordError;
+  const form = useFormValidation<SignUpField>(fieldsConfig);
 
   return (
     <Screen withStackHeader>
       <View style={styles.container}>
         <Text style={styles.title}>Create my account</Text>
 
-        <TextInput
+        <FormTextField
           value={email}
           onChangeText={setEmail}
-          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          onBlur={() => form.touch("email")}
           placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
-          style={[styles.input, showEmailError && styles.inputError]}
+          error={form.getError("email")}
+          showError={form.showError("email")}
         />
-        {showEmailError && <Text style={styles.fieldError}>{emailError}</Text>}
 
-        <TextInput
+        <FormTextField
           value={password}
           onChangeText={setPassword}
-          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          onBlur={() => form.touch("password")}
           placeholder="Password"
           secureTextEntry
-          style={[styles.input, showPasswordError && styles.inputError]}
+          error={form.getError("password")}
+          showError={form.showError("password")}
         />
-        {showPasswordError && <Text style={styles.fieldError}>{passwordError}</Text>}
 
-        <TextInput
+        <FormTextField
           value={repeatPassword}
           onChangeText={setRepeatPassword}
-          onBlur={() => setTouched((t) => ({ ...t, repeatPassword: true }))}
+          onBlur={() => form.touch("repeatPassword")}
           placeholder="Repeat password"
           secureTextEntry
-          style={[styles.input, showRepeatPasswordError && styles.inputError]}
+          error={form.getError("repeatPassword")}
+          showError={form.showError("repeatPassword")}
         />
-        {showRepeatPasswordError && <Text style={styles.fieldError}>{repeatPasswordError}</Text>}
 
-        <Pressable
-          style={[styles.button, !canContinue && styles.buttonDisabled]}
-          disabled={!canContinue}
+        <FormSubmitButton
+          label="Sign up"
+          loadingLabel="Signing up..."
+          loading={isSubmitting}
+          disabled={!form.isValid}
           onPress={async () => {
-            setTouched({ email: true, password: true, repeatPassword: true });
-            if (emailError || passwordError || repeatPasswordError) return;
+            form.touchAll();
+            if (!form.isValid) return;
 
             setIsSubmitting(true);
-            setError(null);
+            setSubmitError(null);
             try {
               await signUp(email.trim(), password);
-              router.replace(routes.onboarding.choose);
+              resetToOnboardingChoose(router);
             } catch (e: unknown) {
-              const message = e instanceof Error ? e.message : "Sign up failed";
-              setError(message);
+              setSubmitError(getUserFacingErrorMessage(e, "Sign up failed"));
             } finally {
               setIsSubmitting(false);
             }
           }}
-        >
-          <Text style={styles.buttonText}>{isSubmitting ? "Signing up..." : "Sign up"}</Text>
-        </Pressable>
+        />
 
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account?</Text>
@@ -109,13 +117,6 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, gap: 10 },
   title: { fontSize: 22, fontWeight: "700" },
-  input: { borderWidth: 1, borderColor: "#ddd", paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
-  inputError: { borderColor: "#b91c1c" },
-  fieldError: { color: "#b91c1c", fontSize: 13, marginTop: -6 },
-  button: { backgroundColor: "#111827", paddingVertical: 12, borderRadius: 10, alignItems: "center", marginTop: 6 },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: "white", fontWeight: "600" },
-  errorText: { color: "#b91c1c", marginTop: 8 },
   footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center" },
   footerText: { color: "#6b7280" },
   footerLink: { color: "#2563eb", fontWeight: "700" },

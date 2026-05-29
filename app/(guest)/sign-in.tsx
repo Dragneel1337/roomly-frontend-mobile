@@ -1,11 +1,18 @@
 import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
-import { getOnboardingComplete } from "@/src/features/auth/onboardingStore";
-import { validateEmail, validateRequiredPassword } from "@/src/features/auth/validation";
+import { validateEmail, validatePassword } from "@/src/features/auth/validation";
+import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
+import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
+import { FormTextField } from "@/src/shared/components/form/FormTextField";
+import { formStyles } from "@/src/shared/components/form/formStyles";
+import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
+import { useFormValidation } from "@/src/shared/validation/useFormValidation";
+
+type SignInField = "email" | "password";
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -13,70 +20,71 @@ export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const emailError = useMemo(() => validateEmail(email), [email]);
-  const passwordError = useMemo(() => validateRequiredPassword(password), [password]);
+  const fieldsConfig = useMemo(
+    () => ({
+      email: { value: email, validate: validateEmail },
+      password: { value: password, validate: validatePassword },
+    }),
+    [email, password],
+  );
 
-  const canContinue = !isSubmitting && !emailError && !passwordError;
-
-  const showEmailError = touched.email && !!emailError;
-  const showPasswordError = touched.password && !!passwordError;
+  const form = useFormValidation<SignInField>(fieldsConfig);
 
   return (
     <Screen withStackHeader>
       <View style={styles.container}>
         <Text style={styles.title}>Sign in</Text>
 
-        <TextInput
+        <FormTextField
           value={email}
           onChangeText={setEmail}
-          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          onBlur={() => form.touch("email")}
           placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
-          style={[styles.input, showEmailError && styles.inputError]}
+          error={form.getError("email")}
+          showError={form.showError("email")}
         />
-        {showEmailError && <Text style={styles.fieldError}>{emailError}</Text>}
 
-        <TextInput
+        <FormTextField
           value={password}
           onChangeText={setPassword}
-          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          onBlur={() => form.touch("password")}
           placeholder="Password"
           secureTextEntry
-          style={[styles.input, showPasswordError && styles.inputError]}
+          error={form.getError("password")}
+          showError={form.showError("password")}
         />
-        {showPasswordError && <Text style={styles.fieldError}>{passwordError}</Text>}
 
-        <Pressable
-          style={[styles.button, !canContinue && styles.buttonDisabled]}
-          disabled={!canContinue}
+        <FormSubmitButton
+          label="Sign in"
+          loadingLabel="Signing in..."
+          loading={isSubmitting}
+          disabled={!form.isValid}
           onPress={async () => {
-            setTouched({ email: true, password: true });
-            if (emailError || passwordError) return;
+            form.touchAll();
+            if (!form.isValid) return;
 
             setIsSubmitting(true);
-            setError(null);
+            setSubmitError(null);
             try {
-              await signIn(email.trim(), password);
-              const onboardingComplete = await getOnboardingComplete();
-              router.replace(
-                onboardingComplete ? routes.tabs.shopping : routes.onboarding.choose,
-              );
+              const onboardingComplete = await signIn(email.trim(), password);
+              if (onboardingComplete) {
+                resetToTabs(router);
+              } else {
+                resetToOnboardingChoose(router);
+              }
             } catch (e: unknown) {
-              const message = e instanceof Error ? e.message : "Sign in failed";
-              setError(message);
+              setSubmitError(getUserFacingErrorMessage(e, "Sign in failed"));
             } finally {
               setIsSubmitting(false);
             }
           }}
-        >
-          <Text style={styles.buttonText}>{isSubmitting ? "Signing in..." : "Sign in"}</Text>
-        </Pressable>
+        />
 
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don’t have an account?</Text>
@@ -92,13 +100,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, gap: 10 },
   title: { fontSize: 22, fontWeight: "700" },
-  input: { borderWidth: 1, borderColor: "#ddd", paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
-  inputError: { borderColor: "#b91c1c" },
-  fieldError: { color: "#b91c1c", fontSize: 13, marginTop: -6 },
-  button: { backgroundColor: "#111827", paddingVertical: 12, borderRadius: 10, alignItems: "center", marginTop: 6 },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: "white", fontWeight: "600" },
-  errorText: { color: "#b91c1c", marginTop: 8 },
   footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center" },
   footerText: { color: "#6b7280" },
   footerLink: { color: "#2563eb", fontWeight: "700" },

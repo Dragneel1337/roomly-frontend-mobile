@@ -1,6 +1,7 @@
 import { Tabs, useRouter } from "expo-router";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { routes } from "@/src/shared/routes";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function TabsLayout() {
         headerTitle: "Roomly",
         headerRight: () => (
           <Pressable
-            onPress={() => router.push("/(modals)/menu")}
+            onPress={() => router.push(routes.modals.menu)}
             style={{ paddingHorizontal: 14, paddingVertical: 8 }}
             accessibilityLabel="Open menu"
           >

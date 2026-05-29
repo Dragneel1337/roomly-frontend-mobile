@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
 
 export default function MenuModal() {
@@ -9,13 +10,13 @@ export default function MenuModal() {
         <Text style={styles.title}>Menu</Text>
 
         <View style={styles.list}>
-          <Link href="/(modals)/switch-household" style={styles.item}>
+          <Link href={routes.modals.switchHousehold} style={styles.item}>
             Switch household / profile
           </Link>
-          <Link href="/(modals)/profile" style={styles.item}>
+          <Link href={routes.modals.profile} style={styles.item}>
             Profile
           </Link>
-          <Link href="/(modals)/settings" style={styles.item}>
+          <Link href={routes.modals.settings} style={styles.item}>
             Settings
           </Link>
         </View>

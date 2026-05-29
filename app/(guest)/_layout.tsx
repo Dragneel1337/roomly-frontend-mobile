@@ -7,6 +7,14 @@ export default function GuestLayout() {
         headerShown: true,
         title: "Roomly",
       }}
-    />
+    >
+      <Stack.Screen
+        name="welcome"
+        options={{
+          headerBackVisible: false,
+          gestureEnabled: false,
+        }}
+      />
+    </Stack>
   );
 }

@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
-import { routes } from "@/src/shared/routes";
+import { resetToWelcome } from "@/src/shared/navigation/resetRoutes";
 import { Screen } from "@/src/shared/components/Screen";
 
 export default function SettingsModal() {
@@ -18,7 +18,7 @@ export default function SettingsModal() {
           style={styles.signOutButton}
           onPress={async () => {
             await signOut();
-            router.replace(routes.guest.welcome);
+            resetToWelcome(router);
           }}
         >
           <Text style={styles.signOutText}>Sign out</Text>

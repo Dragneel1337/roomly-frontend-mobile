@@ -2,6 +2,7 @@ import { Link, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { JoinCodeForm } from "@/src/features/household/JoinCodeForm";
+import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
 
@@ -16,19 +17,17 @@ export default function WelcomeScreen() {
         <Text style={styles.sectionTitle}>Join household</Text>
         <JoinCodeForm
           onSubmit={(joinCode) =>
-            router.push({ pathname: routes.onboarding.join, params: { joinCode } })
+            router.push({ pathname: routes.onboarding.createProfile, params: { joinCode } })
           }
         />
 
         <View style={styles.divider} />
 
         <Text style={styles.sectionTitle}>Create household</Text>
-        <Pressable
-          style={styles.button}
+        <FormSubmitButton
+          label="Create new household"
           onPress={() => router.push(routes.onboarding.createHousehold)}
-        >
-          <Text style={styles.buttonText}>Create new household</Text>
-        </Pressable>
+        />
 
         <View style={styles.divider} />
 
@@ -55,14 +54,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, gap: 10 },
   title: { fontSize: 28, fontWeight: "700", marginTop: 6 },
   sectionTitle: { fontSize: 16, fontWeight: "600", marginTop: 12 },
-  button: {
-    backgroundColor: "#111827",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: { color: "white", fontWeight: "600" },
   divider: { height: 1, backgroundColor: "#eee", marginVertical: 10 },
   iconRow: { flexDirection: "row", gap: 12 },
   iconButton: {

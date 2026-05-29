@@ -9,12 +9,7 @@ export function validateEmail(email: string): string | null {
   return null;
 }
 
-export function validateRequiredPassword(password: string): string | null {
-  if (!password) return "Password is required";
-  return null;
-}
-
-export function validateNewPassword(password: string): string | null {
+export function validatePassword(password: string): string | null {
   if (!password) return "Password is required";
   if (password.length < PASSWORD_MIN_LENGTH) {
     return `Password must be at least ${PASSWORD_MIN_LENGTH} characters`;
@@ -22,7 +17,7 @@ export function validateNewPassword(password: string): string | null {
   return null;
 }
 
-export function validatePasswordsMatch(a: string, b: string): string | null {
-  if (a !== b) return "Passwords do not match";
+export function validatePasswordsMatch(password: string, repeatPassword: string): string | null {
+  if (password !== repeatPassword) return "Passwords do not match";
   return null;
 }

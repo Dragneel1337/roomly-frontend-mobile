@@ -9,7 +9,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isOnboardingComplete: boolean;
   isOnboardingLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(() => {
-    async function signIn(email: string, password: string) {
+    async function signIn(email: string, password: string): Promise<boolean> {
       const tokens = await loginRequest(email, password);
       await setRefreshToken(tokens.refreshToken);
       setAccessToken(tokens.accessToken);
@@ -76,9 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (onboardingStatus === null) {
         await setOnboardingComplete(true);
         setIsOnboardingCompleteState(true);
-      } else {
-        setIsOnboardingCompleteState(onboardingStatus === true);
+        return true;
       }
+      const complete = onboardingStatus === true;
+      setIsOnboardingCompleteState(complete);
+      return complete;
     }
 
     async function signUp(email: string, password: string) {

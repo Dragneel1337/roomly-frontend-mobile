@@ -3,7 +3,6 @@ import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
 type ScreenProps = {
   children: ReactNode;
-  /** When true, Stack/Tabs header already handles the top inset. */
   withStackHeader?: boolean;
   edges?: Edge[];
 };

@@ -6,9 +6,14 @@ export const routes = {
   },
   onboarding: {
     choose: "/(onboarding)/choose-household",
-    join: "/(onboarding)/join-household",
     createHousehold: "/(onboarding)/create-household",
     createProfile: "/(onboarding)/create-profile",
+  },
+  modals: {
+    menu: "/(modals)/menu",
+    switchHousehold: "/(modals)/switch-household",
+    profile: "/(modals)/profile",
+    settings: "/(modals)/settings",
   },
   tabs: {
     shopping: "/(tabs)/shopping",
