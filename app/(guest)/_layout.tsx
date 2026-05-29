@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-export default function AuthLayout() {
+export default function GuestLayout() {
   return (
     <Stack
       screenOptions={{
@@ -10,4 +10,3 @@ export default function AuthLayout() {
     />
   );
 }
-

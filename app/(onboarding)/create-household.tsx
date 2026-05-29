@@ -1,23 +1,27 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { routes } from "@/src/shared/routes";
+import { Screen } from "@/src/shared/components/Screen";
 
 export default function CreateHouseholdScreen() {
   const router = useRouter();
   const [name, setName] = useState("");
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create new household</Text>
-      <TextInput value={name} onChangeText={setName} placeholder="Household name" style={styles.input} />
-      <Pressable
-        style={[styles.button, !name.trim() && styles.buttonDisabled]}
-        disabled={!name.trim()}
-        onPress={() => router.replace("/(auth)/create-profile")}
-      >
-        <Text style={styles.buttonText}>Create</Text>
-      </Pressable>
-    </View>
+    <Screen withStackHeader>
+      <View style={styles.container}>
+        <Text style={styles.title}>Create new household</Text>
+        <TextInput value={name} onChangeText={setName} placeholder="Household name" style={styles.input} />
+        <Pressable
+          style={[styles.button, !name.trim() && styles.buttonDisabled]}
+          disabled={!name.trim()}
+          onPress={() => router.replace(routes.onboarding.createProfile)}
+        >
+          <Text style={styles.buttonText}>Create</Text>
+        </Pressable>
+      </View>
+    </Screen>
   );
 }
 
@@ -29,4 +33,3 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: "white", fontWeight: "600" },
 });
-
