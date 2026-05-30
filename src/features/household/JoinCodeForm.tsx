@@ -1,14 +1,18 @@
 import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { Text, View } from "react-native";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
+import { formStyles } from "@/src/shared/components/form/formStyles";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 import { HOUSEHOLD_JOIN_CODE_LENGTH, validateJoinCode } from "./validation";
 
 type JoinCodeFormProps = {
-  onSubmit: (joinCode: string) => void;
+  onSubmit: (joinCode: string) => void | Promise<void>;
   submitLabel?: string;
+  loadingLabel?: string;
+  loading?: boolean;
   placeholder?: string;
+  submitError?: string | null;
 };
 
 type JoinCodeField = "joinCode";
@@ -16,7 +20,10 @@ type JoinCodeField = "joinCode";
 export function JoinCodeForm({
   onSubmit,
   submitLabel = "Join",
+  loadingLabel,
+  loading = false,
   placeholder = "Enter join code",
+  submitError = null,
 }: JoinCodeFormProps) {
   const [joinCode, setJoinCode] = useState("");
 
@@ -46,13 +53,17 @@ export function JoinCodeForm({
 
       <FormSubmitButton
         label={submitLabel}
+        loadingLabel={loadingLabel}
+        loading={loading}
         disabled={!form.isValid}
         onPress={() => {
           form.touchAll();
           if (!form.isValid) return;
-          onSubmit(normalizedJoinCode);
+          void onSubmit(normalizedJoinCode);
         }}
       />
+
+      {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
     </View>
   );
 }

@@ -14,6 +14,7 @@ export const routes = {
     switchHousehold: "/(modals)/switch-household",
     profile: "/(modals)/profile",
     settings: "/(modals)/settings",
+    upgrade: "/(modals)/upgrade",
   },
   tabs: {
     shopping: "/(tabs)/shopping",

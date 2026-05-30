@@ -1,28 +1,70 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
+import {
+  AVAILABLE_AVATARS_AND_COLORS,
+  CREATE_HOUSEHOLD,
+  JOIN_HOUSEHOLD,
+} from "@/src/features/household/householdApi";
+import { MEMBERS_LIMIT_DEFAULT } from "@/src/features/household/validation";
 import { validateNickname } from "@/src/features/profile/validation";
+import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
+import { formStyles } from "@/src/shared/components/form/formStyles";
 import { resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { Screen } from "@/src/shared/components/Screen";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
-const AVATARS = ["Cat", "Dog", "Fox"];
-const COLORS = ["Blue", "Red", "Green"];
-
 type CreateProfileField = "nickname";
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function cycle(index: number, length: number): number {
+  if (length <= 0) return 0;
+  return ((index % length) + length) % length;
+}
 
 export default function CreateProfileScreen() {
   const router = useRouter();
   const { completeOnboarding } = useAuth();
+  const params = useLocalSearchParams<{
+    joinCode?: string;
+    householdName?: string;
+    membersLimit?: string;
+  }>();
+  const joinCode = firstParam(params.joinCode);
+  const householdName = firstParam(params.householdName);
+  const membersLimitParam = firstParam(params.membersLimit);
+
   const [nickname, setNickname] = useState("");
   const [avatarIndex, setAvatarIndex] = useState(0);
   const [colorIndex, setColorIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const avatar = useMemo(() => AVATARS[avatarIndex % AVATARS.length], [avatarIndex]);
-  const color = useMemo(() => COLORS[colorIndex % COLORS.length], [colorIndex]);
+  const {
+    data,
+    loading: optionsLoading,
+    error: optionsError,
+    refetch: refetchOptions,
+  } = useQuery(AVAILABLE_AVATARS_AND_COLORS);
+
+  const avatars = useMemo(
+    () => (data?.availableAvatarsAndColors.avatars ?? []).filter((a): a is string => !!a),
+    [data],
+  );
+  const colors = useMemo(() => data?.availableAvatarsAndColors.colors ?? [], [data]);
+
+  const avatarName = avatars.length ? avatars[cycle(avatarIndex, avatars.length)] : undefined;
+  const selectedColor = colors.length ? colors[cycle(colorIndex, colors.length)] : undefined;
+
+  const [createHousehold] = useMutation(CREATE_HOUSEHOLD);
+  const [joinHousehold] = useMutation(JOIN_HOUSEHOLD);
 
   const fieldsConfig = useMemo(
     () => ({
@@ -32,6 +74,52 @@ export default function CreateProfileScreen() {
   );
 
   const form = useFormValidation<CreateProfileField>(fieldsConfig);
+
+  const canSubmit = form.isValid && !!avatarName && !!selectedColor && !isSubmitting;
+
+  async function onConfirm() {
+    form.touchAll();
+    if (!form.isValid) return;
+    if (!avatarName || !selectedColor) {
+      setSubmitError("Pick an avatar and a color first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      if (joinCode) {
+        await joinHousehold({
+          variables: {
+            nickname: nickname.trim(),
+            avatarName,
+            avatarColorName: selectedColor.name,
+            joinCode,
+          },
+        });
+      } else if (householdName) {
+        await createHousehold({
+          variables: {
+            name: householdName,
+            membersLimit: Number(membersLimitParam) || MEMBERS_LIMIT_DEFAULT,
+            nickname: nickname.trim(),
+            avatarName,
+            avatarColorName: selectedColor.name,
+          },
+        });
+      } else {
+        setSubmitError("Missing household details. Go back and try again.");
+        return;
+      }
+
+      await completeOnboarding();
+      resetToTabs(router);
+    } catch (e: unknown) {
+      setSubmitError(getUserFacingErrorMessage(e, "Could not finish setup"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <Screen withStackHeader>
@@ -48,39 +136,78 @@ export default function CreateProfileScreen() {
           showError={form.showError("nickname")}
         />
 
-        <Text style={styles.label}>Avatar</Text>
-        <View style={styles.row}>
-          <Pressable style={styles.pill} onPress={() => setAvatarIndex((i) => i - 1)}>
-            <Text style={styles.pillText}>Prev</Text>
-          </Pressable>
-          <View style={styles.preview}>
-            <Text style={styles.previewTitle}>{avatar}</Text>
-            <Text style={styles.previewSubtitle}>{color}</Text>
+        {optionsLoading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator />
           </View>
-          <Pressable style={styles.pill} onPress={() => setAvatarIndex((i) => i + 1)}>
-            <Text style={styles.pillText}>Next</Text>
-          </Pressable>
-        </View>
+        ) : optionsError ? (
+          <View style={styles.loading}>
+            <Text style={formStyles.submitError}>
+              {getUserFacingErrorMessage(optionsError, "Could not load avatars")}
+            </Text>
+            <Pressable style={styles.pill} onPress={() => void refetchOptions()}>
+              <Text style={styles.pillText}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.label}>Avatar</Text>
+            <View style={styles.row}>
+              <Pressable
+                style={styles.pill}
+                disabled={!avatars.length}
+                onPress={() => setAvatarIndex((i) => i - 1)}
+              >
+                <Text style={styles.pillText}>Prev</Text>
+              </Pressable>
+              <View
+                style={[
+                  styles.preview,
+                  selectedColor ? { borderColor: selectedColor.hex } : null,
+                ]}
+              >
+                <Text style={styles.previewTitle}>{avatarName ?? "No avatars"}</Text>
+                <Text style={[styles.previewSubtitle, selectedColor ? { color: selectedColor.hex } : null]}>
+                  {selectedColor?.name ?? "No colors"}
+                </Text>
+              </View>
+              <Pressable
+                style={styles.pill}
+                disabled={!avatars.length}
+                onPress={() => setAvatarIndex((i) => i + 1)}
+              >
+                <Text style={styles.pillText}>Next</Text>
+              </Pressable>
+            </View>
 
-        <View style={styles.row}>
-          <Pressable style={styles.pill} onPress={() => setColorIndex((i) => i - 1)}>
-            <Text style={styles.pillText}>Prev color</Text>
-          </Pressable>
-          <Pressable style={styles.pill} onPress={() => setColorIndex((i) => i + 1)}>
-            <Text style={styles.pillText}>Next color</Text>
-          </Pressable>
-        </View>
+            <View style={styles.row}>
+              <Pressable
+                style={styles.pill}
+                disabled={!colors.length}
+                onPress={() => setColorIndex((i) => i - 1)}
+              >
+                <Text style={styles.pillText}>Prev color</Text>
+              </Pressable>
+              <Pressable
+                style={styles.pill}
+                disabled={!colors.length}
+                onPress={() => setColorIndex((i) => i + 1)}
+              >
+                <Text style={styles.pillText}>Next color</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
 
         <FormSubmitButton
           label="Confirm"
-          disabled={!form.isValid}
-          onPress={async () => {
-            form.touchAll();
-            if (!form.isValid) return;
-            await completeOnboarding();
-            resetToTabs(router);
-          }}
+          loadingLabel="Setting up..."
+          loading={isSubmitting}
+          disabled={!canSubmit}
+          onPress={onConfirm}
         />
+
+        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
       </View>
     </Screen>
   );
@@ -90,6 +217,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, gap: 10 },
   title: { fontSize: 22, fontWeight: "700" },
   label: { fontSize: 14, fontWeight: "600", marginTop: 6 },
+  loading: { paddingVertical: 24, alignItems: "center", gap: 12 },
   row: { flexDirection: "row", gap: 10, alignItems: "center", marginTop: 4 },
   pill: {
     borderWidth: 1,
@@ -99,7 +227,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillText: { fontWeight: "600" },
-  preview: { flex: 1, borderWidth: 1, borderColor: "#eee", padding: 12, borderRadius: 12, alignItems: "center" },
+  preview: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: "#eee",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
   previewTitle: { fontSize: 16, fontWeight: "700" },
   previewSubtitle: { color: "#6b7280", marginTop: 2 },
 });

@@ -1,6 +1,19 @@
 export const HOUSEHOLD_JOIN_CODE_LENGTH = 6;
+export const MEMBERS_LIMIT_MIN = 2;
+export const MEMBERS_LIMIT_MAX = 50;
+export const MEMBERS_LIMIT_DEFAULT = 6;
 
 const JOIN_CODE_REGEX = /^[a-zA-Z0-9]{6}$/;
+
+export function validateMembersLimit(value: string): string | null {
+  const v = value.trim();
+  if (!v) return "Members limit is required";
+  if (!/^\d+$/.test(v)) return "Members limit must be a whole number";
+  const n = Number(v);
+  if (n < MEMBERS_LIMIT_MIN) return `Members limit must be at least ${MEMBERS_LIMIT_MIN}`;
+  if (n > MEMBERS_LIMIT_MAX) return `Members limit must be at most ${MEMBERS_LIMIT_MAX}`;
+  return null;
+}
 
 /** Backend: GeneratedCodeFactory.generate(6, LOWERCASE_LETTERS_AND_DIGITS) */
 export function validateJoinCode(code: string): string | null {

@@ -1,13 +1,56 @@
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, type Href } from "expo-router";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/src/features/auth/AuthProvider";
 import { JoinCodeForm } from "@/src/features/household/JoinCodeForm";
+import { useJoinCodeCheck } from "@/src/features/household/useJoinCodeCheck";
+import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
+import { formStyles } from "@/src/shared/components/form/formStyles";
 import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { continueWithDevice } = useAuth();
+  const { checkJoinCode } = useJoinCodeCheck();
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  async function startHouseholdPath(target: Href) {
+    if (isStarting) return;
+    setIsStarting(true);
+    setStartError(null);
+    try {
+      await continueWithDevice();
+      router.push(target);
+    } catch (e: unknown) {
+      setStartError(getUserFacingErrorMessage(e, "Could not start. Try again."));
+    } finally {
+      setIsStarting(false);
+    }
+  }
+
+  async function joinHouseholdPath(joinCode: string) {
+    if (isStarting) return;
+    setIsStarting(true);
+    setJoinError(null);
+    try {
+      await continueWithDevice();
+      const check = await checkJoinCode(joinCode);
+      if (!check.ok) {
+        setJoinError(check.message);
+        return;
+      }
+      router.push({ pathname: routes.onboarding.createProfile, params: { joinCode } });
+    } catch (e: unknown) {
+      setJoinError(getUserFacingErrorMessage(e, "Could not start. Try again."));
+    } finally {
+      setIsStarting(false);
+    }
+  }
 
   return (
     <Screen withStackHeader>
@@ -16,9 +59,11 @@ export default function WelcomeScreen() {
 
         <Text style={styles.sectionTitle}>Join household</Text>
         <JoinCodeForm
-          onSubmit={(joinCode) =>
-            router.push({ pathname: routes.onboarding.createProfile, params: { joinCode } })
-          }
+          submitLabel="Join household"
+          loadingLabel="Checking..."
+          loading={isStarting}
+          submitError={joinError}
+          onSubmit={joinHouseholdPath}
         />
 
         <View style={styles.divider} />
@@ -26,8 +71,12 @@ export default function WelcomeScreen() {
         <Text style={styles.sectionTitle}>Create household</Text>
         <FormSubmitButton
           label="Create new household"
-          onPress={() => router.push(routes.onboarding.createHousehold)}
+          loadingLabel="Starting..."
+          loading={isStarting}
+          onPress={() => startHouseholdPath(routes.onboarding.createHousehold)}
         />
+
+        {!!startError && <Text style={formStyles.submitError}>{startError}</Text>}
 
         <View style={styles.divider} />
 
