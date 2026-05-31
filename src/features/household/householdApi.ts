@@ -24,6 +24,16 @@ export const AVAILABLE_AVATARS_AND_COLORS: TypedDocumentNode<AvailableAvatarsAnd
   }
 `;
 
+export type MyHouseholdsResult = { households: ({ id: string } | null)[] };
+
+export const MY_HOUSEHOLDS: TypedDocumentNode<MyHouseholdsResult> = gql`
+  query MyHouseholds {
+    households {
+      id
+    }
+  }
+`;
+
 export type HouseholdByJoinCodeResult = {
   householdByJoinCode: {
     id: string;

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  refreshAccessToken,
   setAccessToken as setHeldAccessToken,
   setRefreshHandler,
 } from "./accessTokenHolder";
@@ -30,6 +31,20 @@ import {
 import { getOnboardingComplete, setOnboardingComplete } from "./onboardingStore";
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from "./tokenStore";
 import { getHttpErrorStatus } from "@/src/shared/api/http";
+import { apolloClient } from "@/src/shared/api/apolloClient";
+import { MY_HOUSEHOLDS } from "@/src/features/household/householdApi";
+
+async function fetchHasHousehold(): Promise<boolean | null> {
+  try {
+    const { data } = await apolloClient.query({
+      query: MY_HOUSEHOLDS,
+      fetchPolicy: "network-only",
+    });
+    return (data?.households?.filter(Boolean).length ?? 0) > 0;
+  } catch {
+    return null;
+  }
+}
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -62,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     await clearRefreshToken();
     await clearStoredAuthMode();
+    setHeldAccessToken(null);
     setAuthModeState(null);
     setAccessToken(null);
+    await apolloClient.clearStore();
   }, []);
 
   useEffect(() => {
@@ -105,11 +122,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const tokens = await loginWithDeviceRequest(deviceId);
             await setRefreshToken(tokens.refreshToken);
-            const onboardingStatus = await getOnboardingComplete();
+            setHeldAccessToken(tokens.accessToken);
+            const backend = await fetchHasHousehold();
+            const complete = backend ?? ((await getOnboardingComplete()) ?? false);
+            await setOnboardingComplete(complete);
             if (!cancelled) {
               setAccessToken(tokens.accessToken);
               setAuthModeState("device");
-              setIsOnboardingCompleteState(onboardingStatus === true);
+              setIsOnboardingCompleteState(complete);
             }
           } catch {
             if (!cancelled) setIsOnboardingCompleteState(false);
@@ -124,27 +144,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      try {
-        const tokens = await refreshRequest(storedToken);
-        await setRefreshToken(tokens.refreshToken);
-        const storedMode = await getStoredAuthMode();
-        if (!cancelled) {
-          setAccessToken(tokens.accessToken);
-          setAuthModeState(storedMode ?? "email");
-        }
-
-        let onboardingStatus = await getOnboardingComplete();
-        if (onboardingStatus === null) {
-          await setOnboardingComplete(true);
-          onboardingStatus = true;
-        }
-        if (!cancelled) setIsOnboardingCompleteState(onboardingStatus === true);
-      } catch {
-        await clearRefreshToken();
+      const token = await refreshAccessToken();
+      if (!token) {
         if (!cancelled) setIsOnboardingCompleteState(false);
-      } finally {
         await finishBootstrap();
+        return;
       }
+
+      setHeldAccessToken(token);
+      const storedMode = await getStoredAuthMode();
+      if (!cancelled) {
+        setAccessToken(token);
+        setAuthModeState(storedMode ?? "email");
+      }
+
+      const backend = await fetchHasHousehold();
+      const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+      await setOnboardingComplete(complete);
+      if (!cancelled) setIsOnboardingCompleteState(complete);
+      await finishBootstrap();
     }
 
     bootstrap();
@@ -159,15 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
       setAuthModeState("email");
+      setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
 
-      const onboardingStatus = await getOnboardingComplete();
-      if (onboardingStatus === null) {
-        await setOnboardingComplete(true);
-        setIsOnboardingCompleteState(true);
-        return true;
-      }
-      const complete = onboardingStatus === true;
+      const backend = await fetchHasHousehold();
+      const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+      await setOnboardingComplete(complete);
       setIsOnboardingCompleteState(complete);
       return complete;
     }
@@ -177,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
       setAuthModeState("email");
+      setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
       await setOnboardingComplete(false);
       setIsOnboardingCompleteState(false);
@@ -187,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("device");
       setAuthModeState("device");
+      setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
     }
 
@@ -217,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
       setAuthModeState("email");
+      setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
     }
 
