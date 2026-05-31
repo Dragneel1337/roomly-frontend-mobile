@@ -6,10 +6,17 @@ import { useAuth } from "@/src/features/auth/AuthProvider";
 import {
   AVAILABLE_AVATARS_AND_COLORS,
   CREATE_HOUSEHOLD,
+  fetchHouseholdIds,
   JOIN_HOUSEHOLD,
 } from "@/src/features/household/householdApi";
+import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { MEMBERS_LIMIT_DEFAULT } from "@/src/features/household/validation";
 import { validateNickname } from "@/src/features/profile/validation";
+import {
+  resolveColorLabel,
+  resolveColorNameForApi,
+  resolveHexForDisplay,
+} from "@/src/features/profile/avatarColorCatalog";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
@@ -32,6 +39,7 @@ function cycle(index: number, length: number): number {
 export default function CreateProfileScreen() {
   const router = useRouter();
   const { completeOnboarding } = useAuth();
+  const { setActiveHousehold } = useHousehold();
   const params = useLocalSearchParams<{
     joinCode?: string;
     householdName?: string;
@@ -89,24 +97,37 @@ export default function CreateProfileScreen() {
     setSubmitError(null);
     try {
       if (joinCode) {
-        await joinHousehold({
+        const beforeIds = await fetchHouseholdIds();
+        const result = await joinHousehold({
           variables: {
             nickname: nickname.trim(),
             avatarName,
-            avatarColorName: selectedColor.name,
+            avatarColorName: resolveColorNameForApi(selectedColor),
             joinCode,
           },
         });
+        const profileId = result.data?.joinHousehold.id;
+        if (!profileId) throw new Error("Join failed");
+
+        const afterIds = await fetchHouseholdIds();
+        const householdId =
+          afterIds.find((id) => !beforeIds.includes(id)) ?? afterIds[0];
+        if (!householdId) throw new Error("Household not found");
+
+        await setActiveHousehold(householdId, profileId);
       } else if (householdName) {
-        await createHousehold({
+        const result = await createHousehold({
           variables: {
             name: householdName,
             membersLimit: Number(membersLimitParam) || MEMBERS_LIMIT_DEFAULT,
             nickname: nickname.trim(),
             avatarName,
-            avatarColorName: selectedColor.name,
+            avatarColorName: resolveColorNameForApi(selectedColor),
           },
         });
+        const created = result.data?.createHousehold;
+        if (!created?.owner?.id) throw new Error("Create failed");
+        await setActiveHousehold(created.id, created.owner.id);
       } else {
         setSubmitError("Missing household details. Go back and try again.");
         return;
@@ -163,12 +184,12 @@ export default function CreateProfileScreen() {
               <View
                 style={[
                   styles.preview,
-                  selectedColor ? { borderColor: selectedColor.hex } : null,
+                  selectedColor ? { borderColor: resolveHexForDisplay(selectedColor) } : null,
                 ]}
               >
                 <Text style={styles.previewTitle}>{avatarName ?? "No avatars"}</Text>
-                <Text style={[styles.previewSubtitle, selectedColor ? { color: selectedColor.hex } : null]}>
-                  {selectedColor?.name ?? "No colors"}
+                <Text style={[styles.previewSubtitle, selectedColor ? { color: resolveHexForDisplay(selectedColor) } : null]}>
+                  {selectedColor ? resolveColorLabel(selectedColor) : "No colors"}
                 </Text>
               </View>
               <Pressable
@@ -206,7 +227,6 @@ export default function CreateProfileScreen() {
           disabled={!canSubmit}
           onPress={onConfirm}
         />
-
         {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
       </View>
     </Screen>

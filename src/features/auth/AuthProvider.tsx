@@ -32,6 +32,7 @@ import { getOnboardingComplete, setOnboardingComplete } from "./onboardingStore"
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from "./tokenStore";
 import { getHttpErrorStatus } from "@/src/shared/api/http";
 import { apolloClient } from "@/src/shared/api/apolloClient";
+import { clearActiveSession } from "@/src/features/household/activeSessionStore";
 import { MY_HOUSEHOLDS } from "@/src/features/household/householdApi";
 
 async function fetchHasHousehold(): Promise<boolean | null> {
@@ -188,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function signUp(email: string, password: string) {
+      await clearActiveSession();
       const tokens = await registerRequest(email, password);
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
@@ -223,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { deviceId } = await registerDeviceRequest();
       await setDeviceId(deviceId);
+      await clearActiveSession();
       await applyDeviceLogin(deviceId);
       await setOnboardingComplete(false);
       setIsOnboardingCompleteState(false);

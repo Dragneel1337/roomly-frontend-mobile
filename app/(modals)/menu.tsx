@@ -10,9 +10,6 @@ export default function MenuModal() {
         <Text style={styles.title}>Menu</Text>
 
         <View style={styles.list}>
-          <Link href={routes.modals.switchHousehold} style={styles.item}>
-            Switch household / profile
-          </Link>
           <Link href={routes.modals.profile} style={styles.item}>
             Profile
           </Link>
@@ -20,8 +17,6 @@ export default function MenuModal() {
             Settings
           </Link>
         </View>
-
-        <Text style={styles.subtitle}>Placeholder (no logic yet)</Text>
       </View>
     </Screen>
   );
@@ -30,7 +25,6 @@ export default function MenuModal() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, gap: 12 },
   title: { fontSize: 22, fontWeight: "700" },
-  subtitle: { color: "#6b7280" },
   list: { gap: 10, marginTop: 6 },
   item: { paddingVertical: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: "#eee", borderRadius: 12 },
 });

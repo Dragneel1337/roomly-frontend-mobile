@@ -15,6 +15,7 @@ export const routes = {
     profile: "/(modals)/profile",
     settings: "/(modals)/settings",
     upgrade: "/(modals)/upgrade",
+    addShoppingItem: "/(modals)/add-shopping-item",
   },
   tabs: {
     shopping: "/(tabs)/shopping",

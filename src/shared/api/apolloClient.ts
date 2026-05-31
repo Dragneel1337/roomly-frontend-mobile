@@ -73,6 +73,9 @@ export const apolloClient = new ApolloClient({
       Avatar: { keyFields: false },
       Color: { keyFields: false },
       AvatarsAndColors: { keyFields: false },
+      ShoppingList: { keyFields: ["id"] },
+      ShoppingListItem: { keyFields: ["id"] },
+      Product: { keyFields: ["id"] },
     },
   }),
 });
