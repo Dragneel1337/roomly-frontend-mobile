@@ -9,7 +9,7 @@ import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMe
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -53,10 +53,8 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <Screen withStackHeader>
+    <ModalScreen title="Roomly">
       <View style={styles.container}>
-        <Text style={styles.title}>Welcome to Roomly</Text>
-
         <Text style={styles.sectionTitle}>Join household</Text>
         <JoinCodeForm
           submitLabel="Join household"
@@ -95,14 +93,13 @@ export default function WelcomeScreen() {
           </Link>
         </View>
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 28, fontWeight: "700", marginTop: 6 },
-  sectionTitle: { fontSize: 16, fontWeight: "600", marginTop: 12 },
+  ...modalScreenStyles,
+  sectionTitle: { fontSize: 16, fontWeight: "600", marginTop: 4 },
   divider: { height: 1, backgroundColor: "#eee", marginVertical: 10 },
   iconRow: { flexDirection: "row", gap: 12 },
   iconButton: {

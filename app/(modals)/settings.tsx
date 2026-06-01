@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { resetToWelcome } from "@/src/shared/navigation/resetRoutes";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
 
 export default function SettingsModal() {
   const router = useRouter();
@@ -12,10 +12,8 @@ export default function SettingsModal() {
   const { household } = useHousehold();
 
   return (
-    <Screen withStackHeader>
-      <View style={styles.container}>
-        <Text style={styles.title}>Settings</Text>
-
+    <ModalScreen title="Settings">
+      <View style={modalScreenStyles.container}>
         {household && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Household</Text>
@@ -27,18 +25,26 @@ export default function SettingsModal() {
             <Link href={routes.modals.switchHousehold} style={styles.link}>
               Switch household
             </Link>
+            <Link href={routes.modals.joinHousehold} style={styles.link}>
+              Join another household
+            </Link>
           </View>
         )}
 
         {authMode === "device" ? (
           <>
-            <Text style={styles.subtitle}>
+            <Text style={modalScreenStyles.subtitle}>
               Your data lives only on this device. Create an account to back it up and sync across
               devices.
             </Text>
             <Pressable
               style={styles.upgradeButton}
-              onPress={() => router.push(routes.modals.upgrade)}
+              onPress={() =>
+                router.push({
+                  pathname: routes.guest.signIn,
+                  params: { intent: "upgrade" },
+                })
+              }
             >
               <Text style={styles.upgradeText}>Upgrade account</Text>
             </Pressable>
@@ -55,13 +61,11 @@ export default function SettingsModal() {
           </Pressable>
         )}
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: "700" },
   section: { gap: 6, marginTop: 8, marginBottom: 8 },
   sectionTitle: { fontSize: 14, fontWeight: "600", color: "#374151" },
   householdName: { fontSize: 16, fontWeight: "600" },
@@ -73,7 +77,6 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   link: { color: "#2563eb", fontWeight: "600", marginTop: 8 },
-  subtitle: { color: "#6b7280" },
   upgradeButton: {
     marginTop: 16,
     backgroundColor: "#2563eb",

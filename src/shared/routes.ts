@@ -12,10 +12,13 @@ export const routes = {
   modals: {
     menu: "/(modals)/menu",
     switchHousehold: "/(modals)/switch-household",
+    joinHousehold: "/(modals)/join-household",
+    joinHouseholdProfile: "/(modals)/join-household-profile",
     profile: "/(modals)/profile",
     settings: "/(modals)/settings",
     upgrade: "/(modals)/upgrade",
     addShoppingItem: "/(modals)/add-shopping-item",
+    addFridgeItem: "/(modals)/add-fridge-item",
   },
   tabs: {
     shopping: "/(tabs)/shopping",

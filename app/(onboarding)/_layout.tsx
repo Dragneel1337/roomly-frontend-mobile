@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { AuthGuard } from "@/src/features/auth/AuthGuard";
+import { ModalStackHeader } from "@/src/shared/navigation/ModalStackHeader";
 
 export default function OnboardingLayout() {
   return (
@@ -7,7 +8,8 @@ export default function OnboardingLayout() {
       <Stack
         screenOptions={{
           headerShown: true,
-          title: "Roomly",
+          header: ModalStackHeader,
+          headerBackTitle: "Back",
         }}
       />
     </AuthGuard>

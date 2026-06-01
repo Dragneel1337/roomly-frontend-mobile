@@ -102,9 +102,32 @@ async function loadProfile(profileId: string): Promise<ActiveProfile> {
   };
 }
 
+function clearHouseholdState(
+  setters: {
+    setHouseholds: (v: HouseholdSummary[]) => void;
+    setActiveHouseholdId: (v: string | null) => void;
+    setActiveProfileId: (v: string | null) => void;
+    setHousehold: (v: HouseholdSummary | null) => void;
+    setProfile: (v: ActiveProfile | null) => void;
+    setIsReady: (v: boolean) => void;
+  },
+) {
+  setters.setHouseholds([]);
+  setters.setActiveHouseholdId(null);
+  setters.setActiveProfileId(null);
+  setters.setHousehold(null);
+  setters.setProfile(null);
+  setters.setIsReady(false);
+}
+
 export function HouseholdProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isOnboardingComplete, isOnboardingLoading, isLoading: authLoading } =
-    useAuth();
+  const {
+    accessToken,
+    isAuthenticated,
+    isOnboardingComplete,
+    isOnboardingLoading,
+    isLoading: authLoading,
+  } = useAuth();
 
   const [households, setHouseholds] = useState<HouseholdSummary[]>([]);
   const [activeHouseholdId, setActiveHouseholdId] = useState<string | null>(null);
@@ -114,6 +137,8 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const wasAuthenticatedRef = useRef(false);
+  const prevAccessTokenRef = useRef<string | null>(null);
+  const sessionInitDoneRef = useRef(false);
 
   const applyHouseholdList = useCallback((list: HouseholdSummary[]) => {
     setHouseholds(list);
@@ -210,7 +235,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       }
 
       if (!householdId || !profileId) {
-        console.warn("[HouseholdProvider] No household session — could not resolve profileId");
+        if (__DEV__) {
+          console.warn(
+            "[HouseholdProvider] No household session — could not resolve profileId",
+          );
+        }
         setActiveHouseholdId(null);
         setActiveProfileId(null);
         setHousehold(null);
@@ -230,9 +259,21 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setProfile(loadedProfile);
       setIsReady(true);
     } catch (error) {
-      console.warn("[HouseholdProvider] initializeSession failed:", error);
+      if (__DEV__) {
+        console.warn("[HouseholdProvider] initializeSession failed:", error);
+      }
+      await clearActiveSession();
+      clearHouseholdState({
+        setHouseholds,
+        setActiveHouseholdId,
+        setActiveProfileId,
+        setHousehold,
+        setProfile,
+        setIsReady,
+      });
       setIsReady(true);
     } finally {
+      sessionInitDoneRef.current = true;
       setIsLoading(false);
     }
   }, [applyHouseholdList]);
@@ -240,27 +281,59 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || isOnboardingLoading) return;
 
+    const prevToken = prevAccessTokenRef.current;
+    prevAccessTokenRef.current = accessToken;
+    const accountSwitched =
+      prevToken != null && accessToken != null && prevToken !== accessToken;
+
     const justLoggedIn = isAuthenticated && !wasAuthenticatedRef.current;
     wasAuthenticatedRef.current = isAuthenticated;
 
     if (!isAuthenticated || !isOnboardingComplete) {
-      setIsReady(false);
-      setHouseholds([]);
-      setActiveHouseholdId(null);
-      setActiveProfileId(null);
-      setHousehold(null);
-      setProfile(null);
+      sessionInitDoneRef.current = false;
+      clearHouseholdState({
+        setHouseholds,
+        setActiveHouseholdId,
+        setActiveProfileId,
+        setHousehold,
+        setProfile,
+        setIsReady,
+      });
       return;
     }
 
-    if (justLoggedIn) {
-      setIsReady(false);
+    if (justLoggedIn || accountSwitched) {
+      sessionInitDoneRef.current = false;
+      if (accountSwitched) {
+        clearHouseholdState({
+          setHouseholds,
+          setActiveHouseholdId,
+          setActiveProfileId,
+          setHousehold,
+          setProfile,
+          setIsReady,
+        });
+      } else {
+        setIsReady(false);
+      }
     }
 
-    if (isReady && activeHouseholdId && activeProfileId && profile && !justLoggedIn) return;
+    if (sessionInitDoneRef.current && !justLoggedIn && !accountSwitched) return;
+
+    if (
+      isReady &&
+      activeHouseholdId &&
+      activeProfileId &&
+      profile &&
+      !justLoggedIn &&
+      !accountSwitched
+    ) {
+      return;
+    }
 
     void initializeSession();
   }, [
+    accessToken,
     activeHouseholdId,
     activeProfileId,
     authLoading,

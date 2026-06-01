@@ -1,4 +1,4 @@
-import { Link, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
@@ -11,15 +11,21 @@ import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMe
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { resetToOnboardingChoose } from "@/src/shared/navigation/resetRoutes";
+import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type SignUpField = "email" | "password" | "repeatPassword";
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function SignUpScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ intent?: string }>();
+  const isUpgrade = firstParam(params.intent) === "upgrade";
   const { signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,10 +49,18 @@ export default function SignUpScreen() {
 
   const form = useFormValidation<SignUpField>(fieldsConfig);
 
+  const signInHref = isUpgrade
+    ? { pathname: routes.guest.signIn, params: { intent: "upgrade" } }
+    : routes.guest.signIn;
+
   return (
-    <Screen withStackHeader>
+    <ModalScreen title={isUpgrade ? "Create account" : "Create my account"}>
       <View style={styles.container}>
-        <Text style={styles.title}>Create my account</Text>
+        {isUpgrade ? (
+          <Text style={modalScreenStyles.subtitle}>
+            Add email and password to keep this device&apos;s households and sync across devices.
+          </Text>
+        ) : null}
 
         <FormTextField
           value={email}
@@ -80,8 +94,8 @@ export default function SignUpScreen() {
         />
 
         <FormSubmitButton
-          label="Sign up"
-          loadingLabel="Signing up..."
+          label={isUpgrade ? "Create account" : "Sign up"}
+          loadingLabel={isUpgrade ? "Creating account..." : "Signing up..."}
           loading={isSubmitting}
           disabled={!form.isValid}
           onPress={async () => {
@@ -91,8 +105,12 @@ export default function SignUpScreen() {
             setIsSubmitting(true);
             setSubmitError(null);
             try {
-              await signUp(email.trim(), password);
-              resetToOnboardingChoose(router);
+              await signUp(email.trim(), password, isUpgrade ? { linkDevice: true } : undefined);
+              if (isUpgrade) {
+                resetToTabs(router);
+              } else {
+                resetToOnboardingChoose(router);
+              }
             } catch (e: unknown) {
               setSubmitError(getUserFacingErrorMessage(e, "Sign up failed"));
             } finally {
@@ -105,18 +123,17 @@ export default function SignUpScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account?</Text>
-          <Link href={routes.guest.signIn} style={styles.footerLink}>
+          <Link href={signInHref} style={styles.footerLink}>
             Sign in
           </Link>
         </View>
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: "700" },
+  ...modalScreenStyles,
   footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center" },
   footerText: { color: "#6b7280" },
   footerLink: { color: "#2563eb", fontWeight: "700" },

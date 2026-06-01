@@ -18,6 +18,7 @@ export function useJoinCodeCheck() {
 
     if (error && !CombinedGraphQLErrors.is(error)) {
       throw error;
+      console.log(joinCode);
     }
 
     const household = data?.householdByJoinCode;

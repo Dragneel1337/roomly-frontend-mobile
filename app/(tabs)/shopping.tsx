@@ -1,107 +1,37 @@
-import { useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
-import { formatProductMeta } from "@/src/features/shoppingList/productDisplay";
-import { QuantityStepper } from "@/src/features/shoppingList/QuantityStepper";
-import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
+import { useHouseholdResources } from "@/src/features/household/useHouseholdResources";
+import { ShoppingListSection } from "@/src/features/shoppingList/ShoppingListSection";
+import { ListAccordion } from "@/src/shared/components/ListAccordion";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
-import { formStyles } from "@/src/shared/components/form/formStyles";
 import { Screen } from "@/src/shared/components/Screen";
-import { routes } from "@/src/shared/routes";
-
-function CenterAddButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable style={styles.centerAddButton} onPress={onPress}>
-      <Text style={styles.centerAddButtonText}>+</Text>
-    </Pressable>
-  );
-}
 
 export default function ShoppingTab() {
-  const router = useRouter();
-  const { profile } = useHousehold();
-  const shoppingListId = profile?.shoppingList.id;
-  const {
-    displayItems,
-    loading,
-    refreshing,
-    error,
-    refetch,
-    removeItem,
-    incrementItem,
-    decrementItem,
-    updatingProductId,
-  } = useShoppingList(shoppingListId);
-  const [removeError, setRemoveError] = useState<string | null>(null);
+  const { activeHouseholdId, activeProfileId } = useHousehold();
+  const { resources, loading, error, refetch } = useHouseholdResources();
+  const [showOtherLists, setShowOtherLists] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  function openAddModal() {
-    router.push(routes.modals.addShoppingItem as Href);
-  }
-
-  async function onRemove(productId: number, count: number) {
-    setRemoveError(null);
+  async function onRefresh() {
+    setRefreshing(true);
     try {
-      await removeItem(productId, count);
-    } catch (err) {
-      setRemoveError(getUserFacingErrorMessage(err, "Could not remove item."));
+      await refetch();
+    } finally {
+      setRefreshing(false);
     }
   }
 
-  async function onIncrement(productId: number) {
-    setRemoveError(null);
-    try {
-      await incrementItem(productId);
-    } catch (err) {
-      setRemoveError(getUserFacingErrorMessage(err, "Could not update quantity."));
-    }
-  }
-
-  async function onDecrement(productId: number, currentCount: number, productName: string) {
-    if (currentCount <= 1) {
-      Alert.alert(
-        "Remove product?",
-        `Remove "${productName}" from your shopping list?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Remove",
-            style: "destructive",
-            onPress: () => void onRemove(productId, currentCount),
-          },
-        ],
-      );
-      return;
-    }
-
-    setRemoveError(null);
-    try {
-      await decrementItem(productId);
-    } catch (err) {
-      setRemoveError(getUserFacingErrorMessage(err, "Could not update quantity."));
-    }
-  }
-
-  function onQuantityChange(
-    productId: number,
-    productName: string,
-    currentCount: number,
-    nextCount: number,
-  ) {
-    if (nextCount > currentCount) void onIncrement(productId);
-    else if (nextCount < currentCount) void onDecrement(productId, currentCount, productName);
-  }
-
-  if (shoppingListId == null) {
+  if (activeHouseholdId == null || activeProfileId == null) {
     return (
       <Screen withStackHeader>
         <View style={styles.centered}>
@@ -111,38 +41,28 @@ export default function ShoppingTab() {
     );
   }
 
-  if (loading && displayItems.length === 0) {
+  if (loading && !resources) {
     return (
       <Screen withStackHeader>
-        <View style={styles.container}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Shopping</Text>
-          </View>
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-          <CenterAddButton onPress={openAddModal} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
         </View>
       </Screen>
     );
   }
 
-  if (error && displayItems.length === 0) {
+  if (!resources) {
     return (
       <Screen withStackHeader>
-        <View style={styles.container}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Shopping</Text>
-          </View>
-          <View style={styles.centered}>
-            <Text style={styles.errorText}>
-              {getUserFacingErrorMessage(error, "Could not load shopping list.")}
-            </Text>
-            <Pressable style={styles.retryButton} onPress={() => void refetch()}>
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </Pressable>
-          </View>
-          <CenterAddButton onPress={openAddModal} />
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>
+            {error
+              ? getUserFacingErrorMessage(error, "Could not load household lists.")
+              : "Could not load household lists."}
+          </Text>
+          <Pressable style={styles.retryButton} onPress={() => void refetch()}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -150,126 +70,78 @@ export default function ShoppingTab() {
 
   return (
     <Screen withStackHeader>
-      <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>Shopping</Text>
-        </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
+        }
+      >
+        <Text style={styles.pageTitle}>Shopping</Text>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => void refetch()} />
-          }
-        >
-          {displayItems.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>Your shopping list is empty</Text>
-              <Text style={styles.emptySubtitle}>
-                Search by name or scan a barcode to add products.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.list}>
-              {displayItems.map((item) => {
-                const isUpdating = updatingProductId === item.product.id;
-                const meta = formatProductMeta(item.product.brand, item.product.quantity);
-                return (
-                  <View key={item.id} style={styles.item}>
-                    <View style={styles.itemBody}>
-                      <Text style={styles.itemTitle}>{item.product.name}</Text>
-                      {!!meta && <Text style={styles.itemMeta}>{meta}</Text>}
-                      {!!item.notes && <Text style={styles.itemNotes}>{item.notes}</Text>}
-                      <View style={styles.itemActions}>
-                        <QuantityStepper
-                          value={item.count}
-                          allowRemoveAtMin
-                          onChange={(next) =>
-                            onQuantityChange(
-                              item.product.id,
-                              item.product.name,
-                              item.count,
-                              next,
-                            )
-                          }
-                          disabled={isUpdating}
-                        />
-                        <Pressable
-                          style={[styles.removeButton, isUpdating && styles.removeButtonDisabled]}
-                          disabled={isUpdating}
-                          onPress={() => void onRemove(item.product.id, item.count)}
-                        >
-                          <Text style={styles.removeButtonText}>
-                            {isUpdating ? "Syncing…" : "Remove"}
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </ScrollView>
+        <ListAccordion title="My list" defaultExpanded>
+          <ShoppingListSection
+            title="My list"
+            listLabel="My list"
+            shoppingListId={resources.own.shoppingListId}
+            inventoryId={resources.own.inventoryId}
+            canEdit
+            showTitle={false}
+          />
+        </ListAccordion>
 
-        {!!removeError && <Text style={formStyles.submitError}>{removeError}</Text>}
-        <CenterAddButton onPress={openAddModal} />
-      </View>
+        <ListAccordion title="Shared list" defaultExpanded>
+          <ShoppingListSection
+            title="Shared list"
+            listLabel="Shared list"
+            shoppingListId={resources.sharedShoppingListId}
+            inventoryId={resources.sharedInventoryId}
+            canEdit
+            showTitle={false}
+          />
+        </ListAccordion>
+
+        {resources.others.length > 0 && (
+          <View style={styles.othersToggle}>
+            <Text style={styles.othersLabel}>Other members&apos; lists</Text>
+            <Switch value={showOtherLists} onValueChange={setShowOtherLists} />
+          </View>
+        )}
+
+        {showOtherLists &&
+          resources.others.map((member) => (
+            <ListAccordion
+              key={member.profileId}
+              title={member.nickname}
+              defaultExpanded={false}
+            >
+              <ShoppingListSection
+                title={member.nickname}
+                listLabel={member.nickname}
+                shoppingListId={member.shoppingListId}
+                inventoryId={member.inventoryId}
+                canEdit={false}
+                showTitle={false}
+              />
+            </ListAccordion>
+          ))}
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 20, paddingBottom: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 20, paddingTop: 8 },
+  pageTitle: { fontSize: 22, fontWeight: "700" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 },
-  headerRow: {
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  title: { fontSize: 22, fontWeight: "700" },
-  scrollContent: { flexGrow: 1, paddingBottom: 80 },
-  list: { gap: 10 },
-  item: {
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 12,
-  },
-  itemBody: { gap: 6 },
-  itemTitle: { fontSize: 16, fontWeight: "600" },
-  itemMeta: { color: "#6b7280", fontSize: 14 },
-  itemNotes: { color: "#374151", fontSize: 13, fontStyle: "italic" },
-  itemActions: {
+  othersToggle: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 4,
-    flexWrap: "wrap",
-  },
-  removeButton: {
+    justifyContent: "space-between",
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#fef2f2",
-    marginLeft: "auto",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
   },
-  removeButtonDisabled: { opacity: 0.6 },
-  removeButtonText: { color: "#dc2626", fontWeight: "600", fontSize: 13 },
-  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 48, gap: 10 },
-  emptyTitle: { fontSize: 18, fontWeight: "600" },
-  emptySubtitle: { color: "#6b7280", textAlign: "center" },
-  centerAddButton: {
-    position: "absolute",
-    alignSelf: "center",
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#2563eb",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  centerAddButtonText: { color: "#fff", fontSize: 28, fontWeight: "600", lineHeight: 30 },
+  othersLabel: { fontSize: 15, fontWeight: "600", color: "#374151" },
   errorText: { color: "#dc2626", textAlign: "center" },
   retryButton: {
     paddingVertical: 10,

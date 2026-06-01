@@ -47,6 +47,11 @@ async function fetchHasHousehold(): Promise<boolean | null> {
   }
 }
 
+export type SignUpOptions = {
+  /** Link current device account when upgrading from device-only. */
+  linkDevice?: boolean;
+};
+
 type AuthContextValue = {
   accessToken: string | null;
   authMode: AuthMode | null;
@@ -55,7 +60,7 @@ type AuthContextValue = {
   isOnboardingComplete: boolean;
   isOnboardingLoading: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, options?: SignUpOptions) => Promise<void>;
   continueWithDevice: () => Promise<void>;
   upgradeAccount: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -174,30 +179,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => {
     async function signIn(email: string, password: string): Promise<boolean> {
+      // Drop device/local household session — profiles belong to the previous account.
+      await clearActiveSession();
       const tokens = await loginRequest(email, password);
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
       setAuthModeState("email");
       setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
+      // clearStore (not resetStore) — resetStore refetches active queries with the new
+      // token while UI still holds the old device household and often rejects sign-in.
+      await apolloClient.clearStore();
 
-      const backend = await fetchHasHousehold();
+      let backend: boolean | null = null;
+      try {
+        backend = await fetchHasHousehold();
+      } catch {
+        backend = null;
+      }
       const complete = backend ?? ((await getOnboardingComplete()) ?? true);
       await setOnboardingComplete(complete);
       setIsOnboardingCompleteState(complete);
       return complete;
     }
 
-    async function signUp(email: string, password: string) {
-      await clearActiveSession();
-      const tokens = await registerRequest(email, password);
+    async function signUp(email: string, password: string, options?: SignUpOptions) {
+      if (!options?.linkDevice) {
+        await clearActiveSession();
+      }
+
+      const deviceId = options?.linkDevice ? await getDeviceId() : undefined;
+      const tokens = await registerRequest(email, password, deviceId ?? undefined);
       await setRefreshToken(tokens.refreshToken);
       await setStoredAuthMode("email");
       setAuthModeState("email");
       setHeldAccessToken(tokens.accessToken);
       setAccessToken(tokens.accessToken);
-      await setOnboardingComplete(false);
-      setIsOnboardingCompleteState(false);
+
+      if (options?.linkDevice) {
+        const backend = await fetchHasHousehold();
+        const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+        await setOnboardingComplete(complete);
+        setIsOnboardingCompleteState(complete);
+      } else {
+        await setOnboardingComplete(false);
+        setIsOnboardingCompleteState(false);
+      }
     }
 
     async function applyDeviceLogin(deviceId: string) {
@@ -232,16 +259,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function upgradeAccount(email: string, password: string) {
-      const deviceId = await getDeviceId();
-      const tokens = await registerRequest(email, password, deviceId ?? undefined);
-      await setRefreshToken(tokens.refreshToken);
-      await setStoredAuthMode("email");
-      setAuthModeState("email");
-      setHeldAccessToken(tokens.accessToken);
-      setAccessToken(tokens.accessToken);
+      await signUp(email, password, { linkDevice: true });
     }
 
     async function signOut() {
+      await clearActiveSession();
       await clearSession();
     }
 

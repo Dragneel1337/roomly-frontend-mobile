@@ -9,7 +9,7 @@ import { validateHouseholdName } from "@/src/features/profile/validation";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type CreateHouseholdField = "name" | "membersLimit";
@@ -30,9 +30,8 @@ export default function CreateHouseholdScreen() {
   const form = useFormValidation<CreateHouseholdField>(fieldsConfig);
 
   return (
-    <Screen withStackHeader>
+    <ModalScreen title="Create new household">
       <View style={styles.container}>
-        <Text style={styles.title}>Create new household</Text>
         <FormTextField
           value={name}
           onChangeText={setName}
@@ -66,12 +65,11 @@ export default function CreateHouseholdScreen() {
           }}
         />
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: "700" },
+  ...modalScreenStyles,
   label: { fontSize: 14, fontWeight: "600", marginTop: 6 },
 });

@@ -1,11 +1,13 @@
 import { Stack } from "expo-router";
+import { ModalStackHeader } from "@/src/shared/navigation/ModalStackHeader";
 
 export default function GuestLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        title: "Roomly",
+        header: ModalStackHeader,
+        headerBackTitle: "Back",
       }}
     >
       <Stack.Screen

@@ -1,4 +1,4 @@
-import { Link, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
@@ -9,13 +9,19 @@ import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type SignInField = "email" | "password";
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function SignInScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ intent?: string }>();
+  const isUpgrade = firstParam(params.intent) === "upgrade";
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,10 +38,19 @@ export default function SignInScreen() {
 
   const form = useFormValidation<SignInField>(fieldsConfig);
 
+  const signUpHref = isUpgrade
+    ? { pathname: routes.guest.signUp, params: { intent: "upgrade" } }
+    : routes.guest.signUp;
+
   return (
-    <Screen withStackHeader>
+    <ModalScreen title={isUpgrade ? "Sign in to your account" : "Sign in"}>
       <View style={styles.container}>
-        <Text style={styles.title}>Sign in</Text>
+        {isUpgrade ? (
+          <Text style={modalScreenStyles.subtitle}>
+            Sign in to open the households linked to your email account. Device-only households
+            on this phone are not merged automatically — use Create account below to keep them.
+          </Text>
+        ) : null}
 
         <FormTextField
           value={email}
@@ -87,20 +102,21 @@ export default function SignInScreen() {
         {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don’t have an account?</Text>
-          <Link href={routes.guest.signUp} style={styles.footerLink}>
-            Sign up
+          <Text style={styles.footerText}>
+            {isUpgrade ? "New here?" : "Don’t have an account?"}
+          </Text>
+          <Link href={signUpHref} style={styles.footerLink}>
+            {isUpgrade ? "Create account on this device" : "Sign up"}
           </Link>
         </View>
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: "700" },
-  footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center" },
+  ...modalScreenStyles,
+  footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center", flexWrap: "wrap" },
   footerText: { color: "#6b7280" },
   footerLink: { color: "#2563eb", fontWeight: "700" },
 });

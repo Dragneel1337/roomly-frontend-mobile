@@ -2,8 +2,9 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
+import { resetToTabs } from "@/src/shared/navigation/resetRoutes";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { Screen } from "@/src/shared/components/Screen";
 
 export default function SwitchHouseholdModal() {
   const router = useRouter();
@@ -21,17 +22,16 @@ export default function SwitchHouseholdModal() {
         setError("Could not switch to this household. Try joining it again.");
         return;
       }
-      router.back();
+      resetToTabs(router);
     } finally {
       setSwitchingId(null);
     }
   }
 
   return (
-    <Screen withStackHeader>
-      <View style={styles.container}>
-        <Text style={styles.title}>Switch household</Text>
-        <Text style={styles.subtitle}>Choose which household to open.</Text>
+    <ModalScreen title="Switch household">
+      <View style={modalScreenStyles.container}>
+        <Text style={modalScreenStyles.subtitle}>Choose which household to open.</Text>
 
         <View style={styles.list}>
           {households.map((item) => {
@@ -57,15 +57,12 @@ export default function SwitchHouseholdModal() {
 
         {!!error && <Text style={formStyles.submitError}>{error}</Text>}
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: "700" },
-  subtitle: { color: "#6b7280", marginBottom: 4 },
-  list: { gap: 10, marginTop: 8 },
+  list: { gap: 10, marginTop: 4 },
   item: {
     paddingVertical: 14,
     paddingHorizontal: 14,

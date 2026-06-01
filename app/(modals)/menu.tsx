@@ -1,14 +1,12 @@
 import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { routes } from "@/src/shared/routes";
-import { Screen } from "@/src/shared/components/Screen";
 
 export default function MenuModal() {
   return (
-    <Screen withStackHeader>
-      <View style={styles.container}>
-        <Text style={styles.title}>Menu</Text>
-
+    <ModalScreen title="Menu">
+      <View style={modalScreenStyles.container}>
         <View style={styles.list}>
           <Link href={routes.modals.profile} style={styles.item}>
             Profile
@@ -18,13 +16,17 @@ export default function MenuModal() {
           </Link>
         </View>
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: "700" },
-  list: { gap: 10, marginTop: 6 },
-  item: { paddingVertical: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: "#eee", borderRadius: 12 },
+  list: { gap: 10 },
+  item: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
+    borderRadius: 12,
+  },
 });

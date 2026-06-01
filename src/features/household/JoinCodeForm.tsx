@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
-import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
-import { HOUSEHOLD_JOIN_CODE_LENGTH, validateJoinCode } from "./validation";
+import { JoinCodeInput } from "./JoinCodeInput";
+import { validateJoinCode } from "./validation";
 
 type JoinCodeFormProps = {
   onSubmit: (joinCode: string) => void | Promise<void>;
   submitLabel?: string;
   loadingLabel?: string;
   loading?: boolean;
-  placeholder?: string;
   submitError?: string | null;
 };
 
@@ -22,7 +21,6 @@ export function JoinCodeForm({
   submitLabel = "Join",
   loadingLabel,
   loading = false,
-  placeholder = "Enter join code",
   submitError = null,
 }: JoinCodeFormProps) {
   const [joinCode, setJoinCode] = useState("");
@@ -40,13 +38,10 @@ export function JoinCodeForm({
 
   return (
     <View style={{ gap: 10 }}>
-      <FormTextField
+      <JoinCodeInput
         value={joinCode}
-        onChangeText={(text) => setJoinCode(text.toUpperCase())}
+        onChange={setJoinCode}
         onBlur={() => form.touch("joinCode")}
-        placeholder={placeholder}
-        autoCapitalize="characters"
-        maxLength={HOUSEHOLD_JOIN_CODE_LENGTH}
         error={form.getError("joinCode")}
         showError={form.showError("joinCode")}
       />

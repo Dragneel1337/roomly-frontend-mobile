@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,30 +12,26 @@ import {
   AddProductPreview,
   type PendingProduct,
 } from "@/src/features/shoppingList/AddProductPreview";
-import { BarcodeScannerView } from "@/src/features/shoppingList/BarcodeScannerView";
 import type { OffSearchHit } from "@/src/features/shoppingList/openFoodFactsApi";
 import { displayBrand } from "@/src/features/shoppingList/productDisplay";
 import { useProductSearch } from "@/src/features/shoppingList/useProductSearch";
-import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { Screen } from "@/src/shared/components/Screen";
-
-type AddMode = "search" | "scan";
+import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 
 export default function AddShoppingItemModal() {
   const router = useRouter();
-  const { profile } = useHousehold();
-  const shoppingListId = profile?.shoppingList.id;
+  const params = useLocalSearchParams<{ shoppingListId?: string; title?: string }>();
+  const shoppingListId = params.shoppingListId ? Number(params.shoppingListId) : undefined;
+  const modalTitle = params.title ?? "Add product";
+
   const { addByBarcode, fetchProductByBarcode, adding } = useShoppingList(shoppingListId);
   const { query, setQuery, results, showResults, searching, searchError, isBarcodeQuery, trimmedQuery } =
     useProductSearch();
 
-  const [mode, setMode] = useState<AddMode>("search");
   const [error, setError] = useState<string | null>(null);
-  const [scannerKey, setScannerKey] = useState(0);
   const [pending, setPending] = useState<PendingProduct | null>(null);
   const [pendingQty, setPendingQty] = useState(1);
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -77,7 +73,6 @@ export default function AddShoppingItemModal() {
     const result = await addByBarcode(pending.barcode, pendingQty);
     if (!result.ok) {
       setError(result.message);
-      setScannerKey((key) => key + 1);
       return;
     }
     router.back();
@@ -97,38 +92,20 @@ export default function AddShoppingItemModal() {
     await resolvePendingFromBarcode(trimmedQuery);
   }
 
-  async function onScanBarcode(barcode: string) {
-    setMode("search");
-    await resolvePendingFromBarcode(barcode);
-  }
-
-  if (mode === "scan" && !pending) {
+  if (shoppingListId == null || Number.isNaN(shoppingListId)) {
     return (
-      <Screen withStackHeader>
-        <View style={styles.container}>
-          <Text style={styles.title}>Scan barcode</Text>
-          <BarcodeScannerView
-            key={scannerKey}
-            onBarcodeScanned={(barcode) => void onScanBarcode(barcode)}
-            onBack={() => {
-              setMode("search");
-              setError(null);
-            }}
-            adding={adding || loadingPreview}
-            error={error}
-          />
+      <ModalScreen title={modalTitle}>
+        <View style={modalScreenStyles.container}>
+          <Text style={styles.errorText}>Shopping list is not available.</Text>
         </View>
-      </Screen>
+      </ModalScreen>
     );
   }
 
   return (
-    <Screen withStackHeader>
-      <View style={styles.container}>
-        <Text style={styles.title}>Add product</Text>
-
-        {!pending && (
-          <>
+    <ModalScreen title={modalTitle}>
+      <View style={modalScreenStyles.container}>
+          {!pending && (
             <FormTextField
               value={query}
               onChangeText={(text) => {
@@ -140,103 +117,79 @@ export default function AddShoppingItemModal() {
               autoCorrect={false}
               editable={!adding && !loadingPreview}
             />
+          )}
 
-            <Pressable
-              style={styles.scanButton}
-              disabled={adding || loadingPreview}
-              onPress={() => {
-                clearPending();
-                setMode("scan");
-              }}
-            >
-              <Text style={styles.scanButtonText}>Scan barcode</Text>
-            </Pressable>
-          </>
-        )}
+          {!!error && !pending && <Text style={formStyles.submitError}>{error}</Text>}
+          {!!searchError && !pending && <Text style={formStyles.submitError}>{searchError}</Text>}
 
-        {!!error && !pending && <Text style={formStyles.submitError}>{error}</Text>}
-        {!!searchError && !pending && <Text style={formStyles.submitError}>{searchError}</Text>}
+          {pending && (
+            <>
+              <AddProductPreview
+                product={pending}
+                quantity={pendingQty}
+                onQuantityChange={setPendingQty}
+                onAdd={() => void handleAddPending()}
+                onCancel={clearPending}
+                adding={adding}
+                loading={loadingPreview}
+              />
+              {!!error && <Text style={formStyles.submitError}>{error}</Text>}
+            </>
+          )}
 
-        {pending && (
-          <>
-            <AddProductPreview
-              product={pending}
-              quantity={pendingQty}
-              onQuantityChange={setPendingQty}
-              onAdd={() => void handleAddPending()}
-              onCancel={clearPending}
-              adding={adding}
-              loading={loadingPreview}
-            />
-            {!!error && <Text style={formStyles.submitError}>{error}</Text>}
-          </>
-        )}
-
-        {!pending && (
-          <ScrollView contentContainerStyle={styles.resultsContent} keyboardShouldPersistTaps="handled">
-            {(searching || loadingPreview) && (
-              <View style={styles.searchingRow}>
-                <ActivityIndicator size="small" />
-                <Text style={styles.searchingText}>
-                  {loadingPreview ? "Loading product…" : "Searching…"}
-                </Text>
-              </View>
-            )}
-
-            {isBarcodeQuery && trimmedQuery.length >= 8 && !loadingPreview && (
-              <Pressable
-                style={styles.resultItem}
-                disabled={adding || loadingPreview}
-                onPress={() => void onBarcodeQuerySelect()}
-              >
-                <Text style={styles.resultTitle}>Look up barcode {trimmedQuery}</Text>
-              </Pressable>
-            )}
-
-            {!searching &&
-              !isBarcodeQuery &&
-              trimmedQuery.length >= 2 &&
-              !showResults &&
-              !searchError && (
-                <Text style={styles.emptyResults}>
-                  No products found. Try another name or scan.
-                </Text>
+          {!pending && (
+            <ScrollView contentContainerStyle={styles.resultsContent} keyboardShouldPersistTaps="handled">
+              {(searching || loadingPreview) && (
+                <View style={styles.searchingRow}>
+                  <ActivityIndicator size="small" />
+                  <Text style={styles.searchingText}>
+                    {loadingPreview ? "Loading product…" : "Searching…"}
+                  </Text>
+                </View>
               )}
 
-            {showResults &&
-              results.map((hit) => {
-              const brand = displayBrand(hit.brand);
-              return (
+              {isBarcodeQuery && trimmedQuery.length >= 8 && !loadingPreview && (
                 <Pressable
-                  key={hit.barcode}
                   style={styles.resultItem}
                   disabled={adding || loadingPreview}
-                  onPress={() => onSelectHit(hit)}
+                  onPress={() => void onBarcodeQuerySelect()}
                 >
-                  <Text style={styles.resultTitle}>{hit.name}</Text>
-                  {!!brand && <Text style={styles.resultMeta}>{brand}</Text>}
+                  <Text style={styles.resultTitle}>Look up barcode {trimmedQuery}</Text>
                 </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
+              )}
+
+              {!searching &&
+                !isBarcodeQuery &&
+                trimmedQuery.length >= 2 &&
+                !showResults &&
+                !searchError && (
+                  <Text style={styles.emptyResults}>No products found. Try another name.</Text>
+                )}
+
+              {showResults &&
+                results.map((hit) => {
+                  const brand = displayBrand(hit.brand);
+                  return (
+                    <Pressable
+                      key={hit.barcode}
+                      style={styles.resultItem}
+                      disabled={adding || loadingPreview}
+                      onPress={() => onSelectHit(hit)}
+                    >
+                      <Text style={styles.resultTitle}>{hit.name}</Text>
+                      {!!brand && <Text style={styles.resultMeta}>{brand}</Text>}
+                    </Pressable>
+                  );
+                })}
+            </ScrollView>
+          )}
       </View>
-    </Screen>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: "700" },
-  scanButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#2563eb",
-    alignSelf: "flex-start",
-  },
-  scanButtonText: { color: "#2563eb", fontWeight: "600" },
+  errorText: { color: "#dc2626" },
   resultsContent: { gap: 10, paddingBottom: 24 },
   searchingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   searchingText: { color: "#6b7280" },

@@ -53,7 +53,7 @@ type HouseholdProfileIdsResult = {
     membersCount: number;
     owner: { id: string } | null;
     members: { id: string }[];
-    myProfile?: { id: string } | null;
+    currentUserProfile?: { id: string } | null;
   };
 };
 
@@ -71,18 +71,7 @@ const HOUSEHOLD_PROFILE_IDS: TypedDocumentNode<
       members {
         id
       }
-    }
-  }
-`;
-
-const HOUSEHOLD_MY_PROFILE: TypedDocumentNode<
-  HouseholdProfileIdsResult,
-  { householdId: string }
-> = gql`
-  query HouseholdMyProfile($householdId: String!) {
-    household(householdId: $householdId) {
-      id
-      myProfile {
+      currentUserProfile {
         id
       }
     }
@@ -94,6 +83,7 @@ export type HouseholdProfileIds = {
   membersCount: number;
   owner: { id: string } | null;
   members: { id: string }[];
+  currentUserProfile?: { id: string } | null;
 };
 
 export async function fetchHouseholdProfileIds(
@@ -116,29 +106,19 @@ function profileIdInHousehold(detail: HouseholdProfileIds, profileId: string): b
   return detail.members.some((member) => member.id === profileId);
 }
 
-async function fetchMyProfileId(householdId: string): Promise<string | null> {
-  try {
-    const { data } = await apolloClient.query({
-      query: HOUSEHOLD_MY_PROFILE,
-      variables: { householdId },
-      fetchPolicy: "network-only",
-    });
-    return data?.household?.myProfile?.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** Resolve profileId for one household — tries myProfile, stored id, solo owner. */
+/** Resolve profileId for one household — currentUserProfile, stored id, solo owner. */
 export async function rebuildProfileMapEntry(
   householdId: string,
   membersCount: number,
   storedProfileId: string | null,
 ): Promise<string | null> {
-  const myProfileId = await fetchMyProfileId(householdId);
-  if (myProfileId) return myProfileId;
-
   const detail = await fetchHouseholdProfileIds(householdId);
+
+  const currentUserProfileId = detail?.currentUserProfile?.id ?? null;
+  if (currentUserProfileId && detail && profileIdInHousehold(detail, currentUserProfileId)) {
+    return currentUserProfileId;
+  }
+
   if (!detail) return null;
 
   if (storedProfileId && profileIdInHousehold(detail, storedProfileId)) {

@@ -70,6 +70,15 @@ export const apolloClient = new ApolloClient({
   link: ApolloLink.from([errorLink, authLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
+      Query: {
+        fields: {
+          /**
+           * We refetch `households` in multiple places (auth bootstrap, join, switch),
+           * and we always want the newest list to replace the old one.
+           */
+          households: { merge: false },
+        },
+      },
       Avatar: { keyFields: false },
       Color: { keyFields: false },
       AvatarsAndColors: { keyFields: false },

@@ -1,4 +1,5 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
+import { apolloClient } from "@/src/shared/api/apolloClient";
 
 export type ActiveProfile = {
   id: string;
@@ -28,6 +29,30 @@ export type ActiveProfileFromApi = {
 export type ActiveProfileResult = {
   profile: ActiveProfileFromApi;
 };
+
+type CurrentUserProfileResult = {
+  currentUserProfile: { id: string } | null;
+};
+
+export const CURRENT_USER_PROFILE: TypedDocumentNode<CurrentUserProfileResult> = gql`
+  query CurrentUserProfile {
+    currentUserProfile {
+      id
+    }
+  }
+`;
+
+export async function fetchCurrentUserProfileId(): Promise<string | null> {
+  try {
+    const { data } = await apolloClient.query({
+      query: CURRENT_USER_PROFILE,
+      fetchPolicy: "network-only",
+    });
+    return data?.currentUserProfile?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export const ACTIVE_PROFILE: TypedDocumentNode<
   ActiveProfileResult,
