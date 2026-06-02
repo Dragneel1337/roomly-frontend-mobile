@@ -1,4 +1,5 @@
-import { useRouter, type Href } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +12,7 @@ import { formatProductMeta } from "@/src/features/shoppingList/productDisplay";
 import { QuantityStepper } from "@/src/features/shoppingList/QuantityStepper";
 import { useInventory } from "@/src/features/inventory/useInventory";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
+import { formStyles } from "@/src/shared/components/form/formStyles";
 import { routes } from "@/src/shared/routes";
 
 type InventorySectionProps = {
@@ -31,13 +33,23 @@ export function InventorySection({
     displayItems,
     loading,
     error,
+    refetch,
     removeItem,
     incrementItem,
     decrementItem,
     updatingProductId,
   } = useInventory(inventoryId);
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch]),
+  );
+
   function openAddModal() {
+    setActionError(null);
     router.push({
       pathname: routes.modals.addFridgeItem,
       params: {
@@ -47,40 +59,57 @@ export function InventorySection({
     } as Href);
   }
 
-  async function removeConfirmed(productId: number, count: number) {
+  async function onRemove(productId: number, count: number) {
+    setActionError(null);
     try {
       await removeItem(productId, count);
-    } catch {
-      // useInventory refetches; errors surface on next load
+    } catch (err) {
+      setActionError(getUserFacingErrorMessage(err, "Could not remove item."));
     }
   }
 
-  function confirmRemove(productId: number, count: number, productName: string) {
-    Alert.alert(
-      "Remove product?",
-      `Remove "${productName}" from the fridge?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => void removeConfirmed(productId, count),
-        },
-      ],
-    );
+  async function onIncrement(productId: number) {
+    setActionError(null);
+    try {
+      await incrementItem(productId);
+    } catch (err) {
+      setActionError(getUserFacingErrorMessage(err, "Could not update quantity."));
+    }
   }
 
   async function onDecrement(productId: number, currentCount: number, productName: string) {
     if (currentCount <= 1) {
-      confirmRemove(productId, currentCount, productName);
+      Alert.alert(
+        "Remove product?",
+        `Remove "${productName}" from the fridge?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: () => void onRemove(productId, currentCount),
+          },
+        ],
+      );
       return;
     }
 
+    setActionError(null);
     try {
       await decrementItem(productId);
-    } catch {
-      // refetch handles state
+    } catch (err) {
+      setActionError(getUserFacingErrorMessage(err, "Could not update quantity."));
     }
+  }
+
+  function onQuantityChange(
+    productId: number,
+    productName: string,
+    currentCount: number,
+    nextCount: number,
+  ) {
+    if (nextCount > currentCount) void onIncrement(productId);
+    else if (nextCount < currentCount) void onDecrement(productId, currentCount, productName);
   }
 
   return (
@@ -115,23 +144,32 @@ export function InventorySection({
                     <QuantityStepper
                       value={item.count}
                       allowRemoveAtMin
-                      onChange={(next) => {
-                        if (next > item.count) void incrementItem(item.product.id);
-                        else if (next < item.count) {
-                          void onDecrement(
-                            item.product.id,
-                            item.count,
-                            item.product.name,
-                          );
-                        }
-                      }}
+                      onChange={(next) =>
+                        onQuantityChange(
+                          item.product.id,
+                          item.product.name,
+                          item.count,
+                          next,
+                        )
+                      }
                       disabled={isUpdating}
                     />
                     <Pressable
                       style={[styles.removeButton, isUpdating && styles.removeButtonDisabled]}
                       disabled={isUpdating}
                       onPress={() =>
-                        confirmRemove(item.product.id, item.count, item.product.name)
+                        Alert.alert(
+                          "Remove product?",
+                          `Remove "${item.product.name}" from the fridge?`,
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Remove",
+                              style: "destructive",
+                              onPress: () => void onRemove(item.product.id, item.count),
+                            },
+                          ],
+                        )
                       }
                     >
                       <Text style={styles.removeButtonText}>
@@ -145,6 +183,8 @@ export function InventorySection({
           })}
         </View>
       )}
+
+      {!!actionError && <Text style={formStyles.submitError}>{actionError}</Text>}
     </View>
   );
 }

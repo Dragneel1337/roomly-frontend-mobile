@@ -68,6 +68,9 @@ export function useInventory(inventoryId: number | undefined) {
           variables: { productId, inventoryId, count },
         });
         await refetch();
+      } catch {
+        await refetch();
+        throw new Error("Could not remove item.");
       } finally {
         setUpdatingProductId(null);
       }
@@ -85,6 +88,9 @@ export function useInventory(inventoryId: number | undefined) {
           variables: { productId, inventoryId, count: 1 },
         });
         await refetch();
+      } catch {
+        await refetch();
+        throw new Error("Could not update quantity.");
       } finally {
         setUpdatingProductId(null);
       }
@@ -102,6 +108,9 @@ export function useInventory(inventoryId: number | undefined) {
           variables: { productId, inventoryId, count: 1 },
         });
         await refetch();
+      } catch {
+        await refetch();
+        throw new Error("Could not update quantity.");
       } finally {
         setUpdatingProductId(null);
       }
