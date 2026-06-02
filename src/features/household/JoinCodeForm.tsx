@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 import { Text, View } from "react-native";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
@@ -12,6 +13,7 @@ type JoinCodeFormProps = {
   loadingLabel?: string;
   loading?: boolean;
   submitError?: string | null;
+  joinButtonStyle?: StyleProp<ViewStyle>;
 };
 
 type JoinCodeField = "joinCode";
@@ -22,6 +24,7 @@ export function JoinCodeForm({
   loadingLabel,
   loading = false,
   submitError = null,
+  joinButtonStyle,
 }: JoinCodeFormProps) {
   const [joinCode, setJoinCode] = useState("");
 
@@ -51,6 +54,7 @@ export function JoinCodeForm({
         loadingLabel={loadingLabel}
         loading={loading}
         disabled={!form.isValid}
+        style={joinButtonStyle}
         onPress={() => {
           form.touchAll();
           if (!form.isValid) return;

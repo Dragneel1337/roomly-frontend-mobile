@@ -2,6 +2,8 @@ import { Stack } from "expo-router";
 import type { ReactNode } from "react";
 import { StyleSheet } from "react-native";
 import { Screen } from "@/src/shared/components/Screen";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 
 type ModalScreenProps = {
   title: string;
@@ -22,6 +24,6 @@ export function ModalScreen({ title, children }: ModalScreenProps) {
 }
 
 export const modalScreenStyles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 12 },
-  subtitle: { color: "#6b7280" },
+  container: { flex: 1, padding: spacing.screenPadding, gap: spacing.sectionGap },
+  subtitle: { color: colors.inputText },
 });

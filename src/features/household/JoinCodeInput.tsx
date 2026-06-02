@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 import { HOUSEHOLD_JOIN_CODE_LENGTH } from "./validation";
 
 function normalizeJoinCodeInput(text: string): string {
@@ -83,26 +85,26 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     maxWidth: 48,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
+    borderColor: colors.field,
+    borderRadius: spacing.inputRadius,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
   },
   cellFilled: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: colors.white,
   },
   cellActive: {
-    borderColor: "#2563eb",
+    borderColor: colors.button,
     borderWidth: 2,
   },
   cellError: {
-    borderColor: "#dc2626",
+    borderColor: colors.error,
   },
   cellText: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.textPrimary,
   },
   hiddenInput: {
     position: "absolute",

@@ -1,3 +1,4 @@
+import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, Text } from "react-native";
 import { formStyles } from "./formStyles";
 
@@ -7,6 +8,7 @@ type FormSubmitButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function FormSubmitButton({
@@ -15,12 +17,13 @@ export function FormSubmitButton({
   loading = false,
   disabled = false,
   onPress,
+  style,
 }: FormSubmitButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
     <Pressable
-      style={[formStyles.button, isDisabled && formStyles.buttonDisabled]}
+      style={[formStyles.button, style, isDisabled && formStyles.buttonDisabled]}
       disabled={isDisabled}
       onPress={onPress}
     >

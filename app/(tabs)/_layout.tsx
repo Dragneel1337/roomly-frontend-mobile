@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthGuard } from "@/src/features/auth/AuthGuard";
 import { HouseholdSessionGate } from "@/src/features/household/HouseholdSessionGate";
 import { TabAppHeader } from "@/src/features/household/TabAppHeader";
+import { colors } from "@/src/shared/theme/colors";
 
 export default function TabsLayout() {
   return (
@@ -11,6 +12,13 @@ export default function TabsLayout() {
         <Tabs
           screenOptions={{
             header: () => <TabAppHeader />,
+            tabBarStyle: {
+              backgroundColor: colors.navBar,
+              borderTopWidth: 0,
+            },
+            tabBarActiveTintColor: colors.navBarIcon,
+            tabBarInactiveTintColor: colors.inputText,
+            tabBarShowLabel: true,
           }}
         >
           <Tabs.Screen

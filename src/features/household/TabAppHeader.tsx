@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HouseholdSubheader } from "@/src/features/household/HouseholdSubheader";
+import { colors } from "@/src/shared/theme/colors";
+import { typography } from "@/src/shared/theme/typography";
 import { routes } from "@/src/shared/routes";
 
 export function TabAppHeader() {
@@ -26,9 +28,7 @@ export function TabAppHeader() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: "#fff",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e7eb",
+    backgroundColor: colors.header,
   },
   row: {
     flexDirection: "row",
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "600",
+    ...typography.headerBrand,
+    color: colors.onHeader,
   },
 });

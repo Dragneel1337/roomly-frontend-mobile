@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useHousehold } from "./HouseholdProvider";
+import { colors } from "@/src/shared/theme/colors";
 
 export function HouseholdSubheader() {
   const { household, isReady } = useHousehold();
@@ -19,11 +20,11 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: "#fff",
+    backgroundColor: colors.header,
   },
   text: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#6b7280",
+    color: colors.inputBackground,
   },
 });
