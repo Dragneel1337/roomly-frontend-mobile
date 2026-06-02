@@ -25,6 +25,16 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Notifications: Expo Go vs development build
+
+| Feature | Expo Go | Development build (`npx expo run:android` / iOS) |
+|--------|---------|--------------------------------------------------|
+| **Recent changes** on Home (REST `GET /api/notifications`) | Yes | Yes |
+| Mark as read / mark all read | Yes | Yes |
+| System tray banners (`expo-notifications`) | No (Android SDK 53+; avoided via lazy import) | Yes, after permission grant |
+
+To test in-app notifications in Expo Go: use two accounts in one household, trigger a `@Notifiable` action on the server (e.g. add a transaction), then open **Home** (tap “Roomly” in the header) or pull to refresh. Remote push from the server is not implemented yet.
+
 ## Get a fresh project
 
 When you're ready, run:

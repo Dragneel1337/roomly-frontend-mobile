@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   refreshAccessToken,
   setAccessToken as setHeldAccessToken,
@@ -34,6 +26,11 @@ import { getHttpErrorStatus } from "@/src/shared/api/http";
 import { apolloClient } from "@/src/shared/api/apolloClient";
 import { clearActiveSession } from "@/src/features/household/activeSessionStore";
 import { MY_HOUSEHOLDS } from "@/src/features/household/householdApi";
+import { AuthContext, type AuthContextValue, type SignUpOptions } from "./authContext";
+import { NotificationSyncEffects } from "@/src/features/notifications/NotificationSyncEffects";
+
+export type { SignUpOptions } from "./authContext";
+export { useAuth } from "./authContext";
 
 async function fetchHasHousehold(): Promise<boolean | null> {
   try {
@@ -46,28 +43,6 @@ async function fetchHasHousehold(): Promise<boolean | null> {
     return null;
   }
 }
-
-export type SignUpOptions = {
-  /** Link current device account when upgrading from device-only. */
-  linkDevice?: boolean;
-};
-
-type AuthContextValue = {
-  accessToken: string | null;
-  authMode: AuthMode | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  isOnboardingComplete: boolean;
-  isOnboardingLoading: boolean;
-  signIn: (email: string, password: string) => Promise<boolean>;
-  signUp: (email: string, password: string, options?: SignUpOptions) => Promise<void>;
-  continueWithDevice: () => Promise<void>;
-  upgradeAccount: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  completeOnboarding: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -272,6 +247,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsOnboardingCompleteState(true);
     }
 
+    async function resetOnboarding() {
+      await setOnboardingComplete(false);
+      setIsOnboardingCompleteState(false);
+    }
+
     return {
       accessToken,
       authMode,
@@ -285,16 +265,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       upgradeAccount,
       signOut,
       completeOnboarding,
+      resetOnboarding,
     };
   }, [accessToken, authMode, isLoading, isOnboardingComplete, isOnboardingLoading, clearSession]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return (
+    <AuthContext.Provider value={value}>
+      <NotificationSyncEffects />
+      {children}
+    </AuthContext.Provider>
+  );
 }

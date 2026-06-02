@@ -1,22 +1,39 @@
 import { useQuery } from "@apollo/client/react";
-import { useMemo, useState } from "react";
-import { AVAILABLE_AVATARS_AND_COLORS } from "@/src/features/household/householdApi";
-import type { AvatarColor } from "@/src/features/household/householdApi";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AVAILABLE_AVATARS_AND_COLORS,
+  HOUSEHOLD_TAKEN_AVATARS,
+  type AvatarColor,
+} from "@/src/features/household/householdApi";
 import { resolveColorNameForApi } from "@/src/features/profile/avatarColorCatalog";
+import {
+  buildTakenSets,
+  collectProfilesFromHousehold,
+  isSelectionValid,
+  partitionAvatars,
+  partitionColors,
+  type TakenSets,
+} from "@/src/features/profile/profileAvailability";
 import { validateNickname } from "@/src/features/profile/validation";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type ProfileSetupField = "nickname";
 
-function cycle(index: number, length: number): number {
-  if (length <= 0) return 0;
-  return ((index % length) + length) % length;
-}
+type UseProfileSetupOptions = {
+  joinCode?: string;
+};
 
-export function useProfileSetup() {
+const EMPTY_TAKEN: TakenSets = {
+  takenAvatarNames: new Set(),
+  takenColorNames: new Set(),
+};
+
+export function useProfileSetup(options?: UseProfileSetupOptions) {
+  const joinCode = options?.joinCode?.trim().toUpperCase();
+
   const [nickname, setNickname] = useState("");
-  const [avatarIndex, setAvatarIndex] = useState(0);
-  const [colorIndex, setColorIndex] = useState(0);
+  const [selectedAvatarName, setSelectedAvatarName] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<AvatarColor | null>(null);
 
   const {
     data,
@@ -25,16 +42,57 @@ export function useProfileSetup() {
     refetch: refetchOptions,
   } = useQuery(AVAILABLE_AVATARS_AND_COLORS);
 
+  const {
+    data: takenData,
+    loading: takenLoading,
+  } = useQuery(HOUSEHOLD_TAKEN_AVATARS, {
+    variables: { joinCode: joinCode ?? "" },
+    skip: !joinCode,
+    fetchPolicy: "network-only",
+  });
+
   const avatars = useMemo(
     () => (data?.availableAvatarsAndColors.avatars ?? []).filter((a): a is string => !!a),
     [data],
   );
   const colors = useMemo(() => data?.availableAvatarsAndColors.colors ?? [], [data]);
 
-  const avatarName = avatars.length ? avatars[cycle(avatarIndex, avatars.length)] : undefined;
-  const selectedColor: AvatarColor | undefined = colors.length
-    ? colors[cycle(colorIndex, colors.length)]
-    : undefined;
+  const taken = useMemo(() => {
+    if (!joinCode || !takenData?.householdByJoinCode) return EMPTY_TAKEN;
+    const profiles = collectProfilesFromHousehold(takenData.householdByJoinCode);
+    return buildTakenSets(profiles);
+  }, [joinCode, takenData]);
+
+  const avatarOptions = useMemo(() => partitionAvatars(avatars, taken), [avatars, taken]);
+  const colorOptions = useMemo(() => partitionColors(colors, taken), [colors, taken]);
+
+  const hasTakenOptions =
+    avatarOptions.taken.length > 0 || colorOptions.taken.length > 0;
+
+  useEffect(() => {
+    if (!avatars.length || !colors.length) return;
+
+    if (
+      !selectedAvatarName ||
+      !avatarOptions.available.includes(selectedAvatarName)
+    ) {
+      setSelectedAvatarName(avatarOptions.available[0] ?? null);
+    }
+
+    if (
+      !selectedColor ||
+      !colorOptions.available.some((c) => c.name === selectedColor.name)
+    ) {
+      setSelectedColor(colorOptions.available[0] ?? null);
+    }
+  }, [
+    avatars.length,
+    colors.length,
+    avatarOptions.available,
+    colorOptions.available,
+    selectedAvatarName,
+    selectedColor,
+  ]);
 
   const fieldsConfig = useMemo(
     () => ({
@@ -45,40 +103,56 @@ export function useProfileSetup() {
 
   const form = useFormValidation<ProfileSetupField>(fieldsConfig);
 
-  const canSubmit = form.isValid && !!avatarName && !!selectedColor;
+  const canSubmit =
+    form.isValid &&
+    isSelectionValid(selectedAvatarName, selectedColor, taken) &&
+    !optionsLoading &&
+    !takenLoading;
 
   function touchAll() {
     form.touchAll();
   }
 
+  function applyPickerSelection(avatarName: string, color: AvatarColor) {
+    setSelectedAvatarName(avatarName);
+    setSelectedColor(color);
+  }
+
   function getProfilePayload():
     | { nickname: string; avatarName: string; avatarColorName: string }
     | null {
-    if (!avatarName || !selectedColor || !form.isValid) return null;
+    if (!isSelectionValid(selectedAvatarName, selectedColor, taken) || !form.isValid) {
+      return null;
+    }
     return {
       nickname: nickname.trim(),
-      avatarName,
-      avatarColorName: resolveColorNameForApi(selectedColor),
+      avatarName: selectedAvatarName!,
+      avatarColorName: resolveColorNameForApi(selectedColor!),
     };
   }
+
+  const selectionTakenError =
+    selectedAvatarName && selectedColor && !isSelectionValid(selectedAvatarName, selectedColor, taken)
+      ? "This avatar or color is already taken in this household."
+      : null;
 
   return {
     nickname,
     setNickname,
-    avatarIndex,
-    setAvatarIndex,
-    colorIndex,
-    setColorIndex,
-    avatars,
-    colors,
-    avatarName,
+    selectedAvatarName,
     selectedColor,
-    optionsLoading,
+    avatarOptions,
+    colorOptions,
+    taken,
+    hasTakenOptions,
+    optionsLoading: optionsLoading || (!!joinCode && takenLoading),
     optionsError,
     refetchOptions,
     form,
     canSubmit,
     touchAll,
+    applyPickerSelection,
     getProfilePayload,
+    selectionTakenError,
   };
 }

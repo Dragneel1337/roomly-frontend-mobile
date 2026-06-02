@@ -3,7 +3,7 @@ import { useMutation } from "@apollo/client/react";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
-import { CREATE_HOUSEHOLD, JOIN_HOUSEHOLD } from "@/src/features/household/householdApi";
+import { CREATE_HOUSEHOLD } from "@/src/features/household/householdApi";
 import { joinHouseholdWithProfile } from "@/src/features/household/joinHouseholdFlow";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { MEMBERS_LIMIT_DEFAULT } from "@/src/features/household/validation";
@@ -32,7 +32,7 @@ export default function CreateProfileScreen() {
   const householdName = firstParam(params.householdName);
   const membersLimitParam = firstParam(params.membersLimit);
 
-  const setup = useProfileSetup();
+  const setup = useProfileSetup({ joinCode });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -43,7 +43,9 @@ export default function CreateProfileScreen() {
 
     const payload = setup.getProfilePayload();
     if (!payload) {
-      setSubmitError("Pick an avatar and a color first.");
+      setSubmitError(
+        setup.selectionTakenError ?? "Pick an avatar and a color that are not taken.",
+      );
       return;
     }
 

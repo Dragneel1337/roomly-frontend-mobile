@@ -19,8 +19,15 @@ export const routes = {
     upgrade: "/(modals)/upgrade",
     addShoppingItem: "/(modals)/add-shopping-item",
     addFridgeItem: "/(modals)/add-fridge-item",
+    addEvent: "/(modals)/add-event",
+    eventDetail: "/(modals)/event-detail",
   },
   tabs: {
+    home: "/(tabs)/home",
     shopping: "/(tabs)/shopping",
+    fridge: "/(tabs)/fridge",
+    calendar: "/(tabs)/calendar",
+    transactions: "/(tabs)/transactions",
+    settings: "/(tabs)/settings",
   },
 } as const;

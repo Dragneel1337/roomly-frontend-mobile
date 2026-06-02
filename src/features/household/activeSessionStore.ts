@@ -62,6 +62,16 @@ export async function clearActivePointers(): Promise<void> {
   ]);
 }
 
+export async function removeHouseholdFromMap(householdId: string): Promise<void> {
+  const map = await getHouseholdProfileMap();
+  delete map[householdId];
+  await saveHouseholdProfileMap(map);
+  const session = await getActiveSession();
+  if (session.householdId === householdId) {
+    await clearActivePointers();
+  }
+}
+
 export async function clearActiveSession(): Promise<void> {
   await Promise.all([
     clearActivePointers(),

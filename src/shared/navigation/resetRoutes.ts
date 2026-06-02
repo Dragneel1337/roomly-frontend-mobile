@@ -19,5 +19,5 @@ export function resetToTabs(router: Router) {
   if (router.canDismiss()) {
     router.dismissAll();
   }
-  router.replace(routes.tabs.shopping);
+  router.replace(routes.tabs.home);
 }

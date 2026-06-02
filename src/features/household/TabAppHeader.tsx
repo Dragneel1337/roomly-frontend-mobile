@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { HouseholdSubheader } from "@/src/features/household/HouseholdSubheader";
 import { routes } from "@/src/shared/routes";
 
@@ -12,13 +11,12 @@ export function TabAppHeader() {
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       <View style={styles.row}>
-        <Text style={styles.title}>Roomly</Text>
         <Pressable
-          onPress={() => router.push(routes.modals.menu)}
-          style={styles.menuButton}
-          accessibilityLabel="Open menu"
+          onPress={() => router.push(routes.tabs.home)}
+          accessibilityRole="button"
+          accessibilityLabel="Go to home"
         >
-          <Ionicons name="menu" size={22} />
+          <Text style={styles.title}>Roomly</Text>
         </Pressable>
       </View>
       <HouseholdSubheader />
@@ -35,16 +33,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     minHeight: 44,
     paddingHorizontal: 16,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: -8,
   },
 });

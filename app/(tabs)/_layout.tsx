@@ -14,6 +14,12 @@ export default function TabsLayout() {
           }}
         >
           <Tabs.Screen
+            name="home"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
             name="shopping"
             options={{
               title: "Shopping",
@@ -35,6 +41,24 @@ export default function TabsLayout() {
               title: "Calendar",
               tabBarIcon: ({ color, size }) => (
                 <Ionicons name="calendar" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="transactions"
+            options={{
+              title: "Transactions",
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="wallet-outline" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
+            options={{
+              title: "Settings",
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="settings-outline" size={size} color={color} />
               ),
             }}
           />

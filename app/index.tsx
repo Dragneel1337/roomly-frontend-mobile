@@ -21,7 +21,7 @@ export default function Index() {
     if (!isOnboardingComplete) {
       return <Redirect href={routes.onboarding.choose} />;
     }
-    return <Redirect href={routes.tabs.shopping} />;
+    return <Redirect href={routes.tabs.home} />;
   }
 
   return <Redirect href={routes.guest.welcome} />;

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { AvatarColorPickerModal } from "@/src/features/profile/AvatarColorPickerModal";
 import {
   resolveColorLabel,
   resolveHexForDisplay,
@@ -13,22 +15,29 @@ type ProfileSetupFieldsProps = {
 };
 
 export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
+  const [pickerVisible, setPickerVisible] = useState(false);
+
   const {
     nickname,
     setNickname,
-    avatarIndex,
-    setAvatarIndex,
-    colorIndex,
-    setColorIndex,
-    avatars,
-    colors,
-    avatarName,
+    selectedAvatarName,
     selectedColor,
+    avatarOptions,
+    colorOptions,
+    taken,
+    hasTakenOptions,
     optionsLoading,
     optionsError,
     refetchOptions,
     form,
+    applyPickerSelection,
+    selectionTakenError,
   } = setup;
+
+  const previewBorderColor =
+    selectedColor && selectedAvatarName
+      ? resolveHexForDisplay(selectedColor)
+      : "#e5e7eb";
 
   return (
     <>
@@ -57,66 +66,56 @@ export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
         </View>
       ) : (
         <>
-          <Text style={styles.label}>Avatar</Text>
-          <View style={styles.row}>
-            <Pressable
-              style={styles.pill}
-              disabled={!avatars.length}
-              onPress={() => setAvatarIndex((i) => i - 1)}
-            >
-              <Text style={styles.pillText}>Prev</Text>
-            </Pressable>
-            <View
+          <Text style={styles.label}>Avatar & color</Text>
+          {hasTakenOptions ? (
+            <Text style={styles.legend}>
+              Gray options at the end of the list are already used in this household.
+            </Text>
+          ) : null}
+
+          <Pressable
+            style={[styles.previewCard, { borderColor: previewBorderColor }]}
+            onPress={() => setPickerVisible(true)}
+          >
+            <Text style={styles.previewAvatar}>{selectedAvatarName ?? "Pick a look"}</Text>
+            <Text
               style={[
-                styles.preview,
-                selectedColor ? { borderColor: resolveHexForDisplay(selectedColor) } : null,
+                styles.previewColor,
+                selectedColor ? { color: resolveHexForDisplay(selectedColor) } : null,
               ]}
             >
-              <Text style={styles.previewTitle}>{avatarName ?? "No avatars"}</Text>
-              <Text
-                style={[
-                  styles.previewSubtitle,
-                  selectedColor ? { color: resolveHexForDisplay(selectedColor) } : null,
-                ]}
-              >
-                {selectedColor ? resolveColorLabel(selectedColor) : "No colors"}
-              </Text>
-            </View>
-            <Pressable
-              style={styles.pill}
-              disabled={!avatars.length}
-              onPress={() => setAvatarIndex((i) => i + 1)}
-            >
-              <Text style={styles.pillText}>Next</Text>
-            </Pressable>
-          </View>
+              {selectedColor ? resolveColorLabel(selectedColor) : "Tap to choose"}
+            </Text>
+            <Text style={styles.changeLink}>Change look</Text>
+          </Pressable>
 
-          <View style={styles.row}>
-            <Pressable
-              style={styles.pill}
-              disabled={!colors.length}
-              onPress={() => setColorIndex((i) => i - 1)}
-            >
-              <Text style={styles.pillText}>Prev color</Text>
-            </Pressable>
-            <Pressable
-              style={styles.pill}
-              disabled={!colors.length}
-              onPress={() => setColorIndex((i) => i + 1)}
-            >
-              <Text style={styles.pillText}>Next color</Text>
-            </Pressable>
-          </View>
+          {!!selectionTakenError && (
+            <Text style={formStyles.submitError}>{selectionTakenError}</Text>
+          )}
         </>
       )}
+
+      <AvatarColorPickerModal
+        visible={pickerVisible}
+        avatarOptions={avatarOptions}
+        colorOptions={colorOptions}
+        taken={taken}
+        initialAvatarName={selectedAvatarName}
+        initialColor={selectedColor}
+        onClose={() => setPickerVisible(false)}
+        onDone={(avatarName, color) => {
+          applyPickerSelection(avatarName, color);
+          setPickerVisible(false);
+        }}
+      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: "600", marginTop: 6 },
+  legend: { color: "#6b7280", fontSize: 13, marginBottom: 4 },
   loading: { paddingVertical: 24, alignItems: "center", gap: 12 },
-  row: { flexDirection: "row", gap: 10, alignItems: "center", marginTop: 4 },
   pill: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -125,14 +124,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillText: { fontWeight: "600" },
-  preview: {
-    flex: 1,
+  previewCard: {
     borderWidth: 2,
-    borderColor: "#eee",
-    padding: 12,
     borderRadius: 12,
+    padding: 16,
     alignItems: "center",
+    backgroundColor: "#fafafa",
   },
-  previewTitle: { fontSize: 16, fontWeight: "700" },
-  previewSubtitle: { color: "#6b7280", marginTop: 2 },
+  previewAvatar: { fontSize: 18, fontWeight: "700" },
+  previewColor: { marginTop: 4, fontWeight: "600" },
+  changeLink: { marginTop: 10, color: "#2563eb", fontWeight: "700" },
 });

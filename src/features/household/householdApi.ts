@@ -198,6 +198,35 @@ export const HOUSEHOLD_BY_JOIN_CODE: TypedDocumentNode<
   }
 `;
 
+export type HouseholdTakenAvatarsResult = {
+  householdByJoinCode: {
+    owner: { avatar: { name: string; colorName: string } } | null;
+    members: { avatar: { name: string; colorName: string } }[];
+  };
+};
+
+export const HOUSEHOLD_TAKEN_AVATARS: TypedDocumentNode<
+  HouseholdTakenAvatarsResult,
+  { joinCode: string }
+> = gql`
+  query HouseholdTakenAvatars($joinCode: String!) {
+    householdByJoinCode(joinCode: $joinCode) {
+      owner {
+        avatar {
+          name
+          colorName
+        }
+      }
+      members {
+        avatar {
+          name
+          colorName
+        }
+      }
+    }
+  }
+`;
+
 export type CreateHouseholdVars = {
   name: string;
   membersLimit: number;
@@ -253,6 +282,44 @@ export type JoinHouseholdResult = {
     nickname: string;
   };
 };
+
+type LeaveHouseholdResult = { leaveHousehold: boolean };
+type LeaveHouseholdVars = { profileId: string };
+
+export const LEAVE_HOUSEHOLD: TypedDocumentNode<LeaveHouseholdResult, LeaveHouseholdVars> = gql`
+  mutation LeaveHousehold($profileId: String!) {
+    leaveHousehold(profileId: $profileId)
+  }
+`;
+
+type DeleteHouseholdResult = { deleteHousehold: boolean };
+type DeleteHouseholdVars = { householdId: string };
+
+export const DELETE_HOUSEHOLD: TypedDocumentNode<DeleteHouseholdResult, DeleteHouseholdVars> = gql`
+  mutation DeleteHousehold($householdId: String!) {
+    deleteHousehold(householdId: $householdId)
+  }
+`;
+
+export async function leaveHousehold(profileId: string): Promise<void> {
+  const { data } = await apolloClient.mutate({
+    mutation: LEAVE_HOUSEHOLD,
+    variables: { profileId },
+  });
+  if (!data?.leaveHousehold) {
+    throw new Error("Could not leave household");
+  }
+}
+
+export async function deleteHousehold(householdId: string): Promise<void> {
+  const { data } = await apolloClient.mutate({
+    mutation: DELETE_HOUSEHOLD,
+    variables: { householdId },
+  });
+  if (!data?.deleteHousehold) {
+    throw new Error("Could not delete household");
+  }
+}
 
 export const JOIN_HOUSEHOLD: TypedDocumentNode<JoinHouseholdResult, JoinHouseholdVars> = gql`
   mutation JoinHousehold(

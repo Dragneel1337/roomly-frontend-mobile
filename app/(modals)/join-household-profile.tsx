@@ -21,7 +21,7 @@ export default function JoinHouseholdProfileModal() {
   const params = useLocalSearchParams<{ joinCode?: string }>();
   const joinCode = firstParam(params.joinCode);
 
-  const setup = useProfileSetup();
+  const setup = useProfileSetup({ joinCode });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -34,7 +34,9 @@ export default function JoinHouseholdProfileModal() {
 
     const payload = setup.getProfilePayload();
     if (!payload) {
-      setSubmitError("Pick an avatar and a color first.");
+      setSubmitError(
+        setup.selectionTakenError ?? "Pick an avatar and a color that are not taken.",
+      );
       return;
     }
 

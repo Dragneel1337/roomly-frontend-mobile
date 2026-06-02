@@ -1,6 +1,6 @@
 export const HOUSEHOLD_JOIN_CODE_LENGTH = 6;
 export const MEMBERS_LIMIT_MIN = 1;
-export const MEMBERS_LIMIT_MAX = 64;
+export const MEMBERS_LIMIT_MAX = 8;
 export const MEMBERS_LIMIT_DEFAULT = 2;
 
 const JOIN_CODE_REGEX = /^[a-zA-Z0-9]{6}$/;

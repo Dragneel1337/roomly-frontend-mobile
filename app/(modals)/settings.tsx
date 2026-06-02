@@ -1,15 +1,117 @@
 import { Link, useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
+import {
+  deleteHousehold,
+  leaveHousehold,
+} from "@/src/features/household/householdApi";
+import { completeHouseholdExit } from "@/src/features/household/householdExitFlow";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
+import { useIsHouseholdOwner } from "@/src/features/household/useIsHouseholdOwner";
+import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { resetToWelcome } from "@/src/shared/navigation/resetRoutes";
 import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { formStyles } from "@/src/shared/components/form/formStyles";
 import { routes } from "@/src/shared/routes";
 
 export default function SettingsModal() {
   const router = useRouter();
-  const { authMode, signOut } = useAuth();
-  const { household } = useHousehold();
+  const { authMode, signOut, resetOnboarding } = useAuth();
+  const {
+    household,
+    activeHouseholdId,
+    activeProfileId,
+    switchHousehold,
+    refreshHouseholds,
+  } = useHousehold();
+  const { isOwner, loading: ownerLoading } = useIsHouseholdOwner();
+  const [exiting, setExiting] = useState(false);
+  const [exitError, setExitError] = useState<string | null>(null);
+
+  function confirmDeleteHousehold() {
+    if (!household || !activeHouseholdId || exiting) return;
+
+    Alert.alert(
+      "Delete household?",
+      `"${household.name}" and all its data will be permanently deleted. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => void runDeleteHousehold(),
+        },
+      ],
+    );
+  }
+
+  function confirmLeaveHousehold() {
+    if (!household || exiting) return;
+
+    Alert.alert(
+      "Leave household?",
+      `You will leave "${household.name}" and your profile in this household will be removed.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: () => void runLeaveHousehold(),
+        },
+      ],
+    );
+  }
+
+  async function runDeleteHousehold() {
+    if (!activeHouseholdId) return;
+    setExiting(true);
+    setExitError(null);
+    try {
+      await deleteHousehold(activeHouseholdId);
+      await completeHouseholdExit({
+        router,
+        removedHouseholdId: activeHouseholdId,
+        switchHousehold,
+        refreshHouseholds,
+        onNoHouseholdsLeft: resetOnboarding,
+      });
+    } catch (e: unknown) {
+      setExitError(getUserFacingErrorMessage(e, "Could not delete household"));
+    } finally {
+      setExiting(false);
+    }
+  }
+
+  async function runLeaveHousehold() {
+    if (!activeHouseholdId || !activeProfileId) return;
+    setExiting(true);
+    setExitError(null);
+    try {
+      await leaveHousehold(activeProfileId);
+      await completeHouseholdExit({
+        router,
+        removedHouseholdId: activeHouseholdId,
+        switchHousehold,
+        refreshHouseholds,
+        onNoHouseholdsLeft: resetOnboarding,
+      });
+    } catch (e: unknown) {
+      setExitError(getUserFacingErrorMessage(e, "Could not leave household"));
+    } finally {
+      setExiting(false);
+    }
+  }
+
+  const showHouseholdActions =
+    !!household && !!activeHouseholdId && !!activeProfileId && !ownerLoading;
 
   return (
     <ModalScreen title="Settings">
@@ -28,8 +130,40 @@ export default function SettingsModal() {
             <Link href={routes.modals.joinHousehold} style={styles.link}>
               Join another household
             </Link>
+
+            {showHouseholdActions ? (
+              isOwner ? (
+                <Pressable
+                  style={[styles.destructiveButton, exiting && styles.buttonDisabled]}
+                  disabled={exiting}
+                  onPress={confirmDeleteHousehold}
+                >
+                  {exiting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.destructiveText}>Delete household</Text>
+                  )}
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={[styles.destructiveButton, exiting && styles.buttonDisabled]}
+                  disabled={exiting}
+                  onPress={confirmLeaveHousehold}
+                >
+                  {exiting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.destructiveText}>Leave household</Text>
+                  )}
+                </Pressable>
+              )
+            ) : ownerLoading ? (
+              <ActivityIndicator style={styles.ownerLoading} />
+            ) : null}
           </View>
         )}
+
+        {!!exitError && <Text style={formStyles.submitError}>{exitError}</Text>}
 
         {authMode === "device" ? (
           <>
@@ -77,6 +211,18 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   link: { color: "#2563eb", fontWeight: "600", marginTop: 8 },
+  destructiveButton: {
+    marginTop: 16,
+    backgroundColor: "#b91c1c",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  destructiveText: { color: "white", fontWeight: "600" },
+  buttonDisabled: { opacity: 0.7 },
+  ownerLoading: { marginTop: 16 },
   upgradeButton: {
     marginTop: 16,
     backgroundColor: "#2563eb",

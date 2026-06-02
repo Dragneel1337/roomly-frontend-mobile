@@ -1,3 +1,4 @@
+import { getAccessToken } from "@/src/features/auth/accessTokenHolder";
 import { API_BASE_URL } from "../config";
 
 export const HTTP_BAD_REQUEST_USER_MESSAGE = "Action Failed, Try again";
@@ -63,6 +64,46 @@ export async function postJson<TResponse>(path: string, body: unknown): Promise<
 export async function getJson<TResponse>(path: string): Promise<TResponse> {
   const url = `${API_BASE_URL}${path}`;
   const response = await fetch(url, { method: "GET" });
+
+  const parsed = await readBody(response);
+  if (!response.ok) {
+    throw new HttpError(httpErrorMessage(response.status), response.status, parsed);
+  }
+
+  return parsed as TResponse;
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getAccessToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+export async function getJsonAuth<TResponse>(path: string): Promise<TResponse> {
+  const url = `${API_BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+
+  const parsed = await readBody(response);
+  if (!response.ok) {
+    throw new HttpError(httpErrorMessage(response.status), response.status, parsed);
+  }
+
+  return parsed as TResponse;
+}
+
+export async function postJsonAuth<TResponse>(path: string, body: unknown): Promise<TResponse> {
+  const url = `${API_BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(body),
+  });
 
   const parsed = await readBody(response);
   if (!response.ok) {
