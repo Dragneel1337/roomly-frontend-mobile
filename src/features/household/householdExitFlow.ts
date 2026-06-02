@@ -6,10 +6,15 @@ import {
 } from "@/src/features/household/householdApi";
 import type { HouseholdSwitchError } from "@/src/features/household/HouseholdProvider";
 import { apolloClient } from "@/src/shared/api/apolloClient";
-import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
+import type { AuthMode } from "@/src/features/auth/deviceStore";
+import {
+  resetAfterIncompleteOnboarding,
+  resetToTabs,
+} from "@/src/shared/navigation/resetRoutes";
 
 type CompleteHouseholdExitOptions = {
   router: Router;
+  authMode: AuthMode | null;
   removedHouseholdId: string;
   switchHousehold: (householdId: string) => Promise<HouseholdSwitchError | null>;
   refreshHouseholds: () => Promise<void>;
@@ -18,6 +23,7 @@ type CompleteHouseholdExitOptions = {
 
 export async function completeHouseholdExit({
   router,
+  authMode,
   removedHouseholdId,
   switchHousehold,
   refreshHouseholds,
@@ -35,7 +41,7 @@ export async function completeHouseholdExit({
     if (router.canDismiss()) {
       router.dismissAll();
     }
-    resetToOnboardingChoose(router);
+    resetAfterIncompleteOnboarding(router, authMode);
     return;
   }
 
@@ -47,7 +53,7 @@ export async function completeHouseholdExit({
     if (router.canDismiss()) {
       router.dismissAll();
     }
-    resetToOnboardingChoose(router);
+    resetAfterIncompleteOnboarding(router, authMode);
     return;
   }
 

@@ -78,6 +78,7 @@ export default function SettingsModal() {
       await deleteHousehold(activeHouseholdId);
       await completeHouseholdExit({
         router,
+        authMode,
         removedHouseholdId: activeHouseholdId,
         switchHousehold,
         refreshHouseholds,
@@ -98,6 +99,7 @@ export default function SettingsModal() {
       await leaveHousehold(activeProfileId);
       await completeHouseholdExit({
         router,
+        authMode,
         removedHouseholdId: activeHouseholdId,
         switchHousehold,
         refreshHouseholds,

@@ -5,7 +5,8 @@ import { routes } from "@/src/shared/routes";
 import { Screen } from "@/src/shared/components/Screen";
 
 export default function Index() {
-  const { isLoading, isAuthenticated, isOnboardingComplete, isOnboardingLoading } = useAuth();
+  const { isLoading, isAuthenticated, isOnboardingComplete, isOnboardingLoading, authMode } =
+    useAuth();
 
   if (isLoading || isOnboardingLoading) {
     return (
@@ -19,7 +20,10 @@ export default function Index() {
 
   if (isAuthenticated) {
     if (!isOnboardingComplete) {
-      return <Redirect href={routes.onboarding.choose} />;
+      if (authMode === "email") {
+        return <Redirect href={routes.onboarding.choose} />;
+      }
+      return <Redirect href={routes.guest.welcome} />;
     }
     return <Redirect href={routes.tabs.home} />;
   }

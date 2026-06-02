@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { joinHouseholdWithProfile } from "@/src/features/household/joinHouseholdFlow";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { ProfileSetupFields } from "@/src/features/profile/ProfileSetupFields";
@@ -9,7 +9,8 @@ import { apolloClient } from "@/src/shared/api/apolloClient";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { ModalScreen } from "@/src/shared/components/ModalScreen";
+import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -65,27 +66,29 @@ export default function JoinHouseholdProfileModal() {
   }
 
   return (
-    <ModalScreen title="Your profile in this household">
-      <View style={styles.container}>
-        <Text style={modalScreenStyles.subtitle}>
-          Choose how you appear to other members in this household.
-        </Text>
+    <ModalScreen title="#Roomly">
+      <ScrollView
+        contentContainerStyle={authScreenStyles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={authScreenStyles.centerBlock}>
+          <View style={authScreenStyles.profileCard}>
+            <ProfileSetupFields setup={setup} />
 
-        <ProfileSetupFields setup={setup} />
+            <FormSubmitButton
+              label="Join household"
+              loadingLabel="Joining..."
+              loading={isSubmitting}
+              disabled={!setup.canSubmit}
+              style={authScreenStyles.submitButton}
+              onPress={onConfirm}
+            />
 
-        <FormSubmitButton
-          label="Join household"
-          loadingLabel="Joining..."
-          loading={isSubmitting}
-          disabled={!setup.canSubmit}
-          onPress={onConfirm}
-        />
-        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
-      </View>
+            {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
+          </View>
+        </View>
+      </ScrollView>
     </ModalScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  ...modalScreenStyles,
-});

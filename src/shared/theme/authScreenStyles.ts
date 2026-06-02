@@ -54,6 +54,16 @@ export const authScreenStyles = StyleSheet.create({
     gap: 16,
     ...authCardShadow,
   },
+  /** Wider card for avatar / profile picker (Figma ChooseAvatar). */
+  profileCard: {
+    backgroundColor: colors.field,
+    borderRadius: 16,
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 32,
+    gap: 18,
+    ...authCardShadow,
+  },
   cardTitle: {
     fontSize: 17,
     fontWeight: "700",
@@ -61,6 +71,21 @@ export const authScreenStyles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    fontWeight: "400",
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginTop: -8,
+    marginBottom: 4,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginTop: 2,
   },
   pillInput: {
     borderWidth: 0,

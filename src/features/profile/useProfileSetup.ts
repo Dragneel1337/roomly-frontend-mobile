@@ -5,12 +5,16 @@ import {
   HOUSEHOLD_TAKEN_AVATARS,
   type AvatarColor,
 } from "@/src/features/household/householdApi";
-import { resolveColorNameForApi } from "@/src/features/profile/avatarColorCatalog";
+import {
+  normalizeCatalogColor,
+  resolveColorNameForApi,
+} from "@/src/features/profile/avatarColorCatalog";
 import {
   buildTakenSets,
   collectProfilesFromHousehold,
   isSelectionValid,
   partitionAvatars,
+  cycleIndex,
   partitionColors,
   type TakenSets,
 } from "@/src/features/profile/profileAvailability";
@@ -69,30 +73,33 @@ export function useProfileSetup(options?: UseProfileSetupOptions) {
   const hasTakenOptions =
     avatarOptions.taken.length > 0 || colorOptions.taken.length > 0;
 
+  const takenKey = useMemo(
+    () =>
+      `${[...taken.takenAvatarNames].sort().join(",")}|${[...taken.takenColorNames].sort().join(",")}`,
+    [taken],
+  );
+
+  /** Defaults / invalid picks only when catalog or taken-set changes — not when user changes color. */
   useEffect(() => {
     if (!avatars.length || !colors.length) return;
 
-    if (
-      !selectedAvatarName ||
-      !avatarOptions.available.includes(selectedAvatarName)
-    ) {
-      setSelectedAvatarName(avatarOptions.available[0] ?? null);
-    }
+    setSelectedAvatarName((current) => {
+      if (current && avatarOptions.available.includes(current)) return current;
+      return avatarOptions.available[0] ?? null;
+    });
 
-    if (
-      !selectedColor ||
-      !colorOptions.available.some((c) => c.name === selectedColor.name)
-    ) {
-      setSelectedColor(colorOptions.available[0] ?? null);
-    }
-  }, [
-    avatars.length,
-    colors.length,
-    avatarOptions.available,
-    colorOptions.available,
-    selectedAvatarName,
-    selectedColor,
-  ]);
+    setSelectedColor((current) => {
+      if (
+        current &&
+        colorOptions.available.some(
+          (c) => normalizeCatalogColor(c).name === normalizeCatalogColor(current).name,
+        )
+      ) {
+        return current;
+      }
+      return colorOptions.available[0] ?? null;
+    });
+  }, [avatars, colors, takenKey, avatarOptions, colorOptions]);
 
   const fieldsConfig = useMemo(
     () => ({
@@ -115,6 +122,27 @@ export function useProfileSetup(options?: UseProfileSetupOptions) {
 
   function applyPickerSelection(avatarName: string, color: AvatarColor) {
     setSelectedAvatarName(avatarName);
+    setSelectedColor(color);
+  }
+
+  function cycleAvatar(direction: -1 | 1) {
+    const list = avatarOptions.available;
+    if (list.length <= 1) return;
+
+    const currentIndex = selectedAvatarName ? list.indexOf(selectedAvatarName) : 0;
+    const nextIndex = cycleIndex((currentIndex >= 0 ? currentIndex : 0) + direction, list.length);
+    setSelectedAvatarName(list[nextIndex] ?? null);
+  }
+
+  function selectColor(color: AvatarColor) {
+    const key = normalizeCatalogColor(color).name;
+    if (
+      !colorOptions.available.some(
+        (entry) => normalizeCatalogColor(entry).name === key,
+      )
+    ) {
+      return;
+    }
     setSelectedColor(color);
   }
 
@@ -152,6 +180,8 @@ export function useProfileSetup(options?: UseProfileSetupOptions) {
     canSubmit,
     touchAll,
     applyPickerSelection,
+    cycleAvatar,
+    selectColor,
     getProfilePayload,
     selectionTakenError,
   };

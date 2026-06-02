@@ -1,6 +1,6 @@
-import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
 import {
   validateEmail,
@@ -11,9 +11,11 @@ import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMe
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { ModalScreen } from "@/src/shared/components/ModalScreen";
 import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
-import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
+import { colors } from "@/src/shared/theme/colors";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type SignUpField = "email" | "password" | "repeatPassword";
@@ -49,92 +51,123 @@ export default function SignUpScreen() {
 
   const form = useFormValidation<SignUpField>(fieldsConfig);
 
-  const signInHref = isUpgrade
-    ? { pathname: routes.guest.signIn, params: { intent: "upgrade" } }
-    : routes.guest.signIn;
+  const headerTitle = isUpgrade ? "Create account" : "#Roomly";
 
   return (
-    <ModalScreen title={isUpgrade ? "Create account" : "Create my account"}>
-      <View style={styles.container}>
-        {isUpgrade ? (
-          <Text style={modalScreenStyles.subtitle}>
-            Add email and password to keep this device&apos;s households and sync across devices.
-          </Text>
-        ) : null}
+    <ModalScreen title={headerTitle}>
+      <ScrollView
+        contentContainerStyle={authScreenStyles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={authScreenStyles.centerBlock}>
+          <View style={authScreenStyles.card}>
+            <Text style={authScreenStyles.cardTitle}>
+              {isUpgrade
+                ? "Create your account"
+                : "Create your\nRoomly account"}
+            </Text>
 
-        <FormTextField
-          value={email}
-          onChangeText={setEmail}
-          onBlur={() => form.touch("email")}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          error={form.getError("email")}
-          showError={form.showError("email")}
-        />
+            {isUpgrade ? (
+              <Text style={styles.upgradeNote}>
+                Add email and password to keep this device&apos;s households and sync across
+                devices.
+              </Text>
+            ) : null}
 
-        <FormTextField
-          value={password}
-          onChangeText={setPassword}
-          onBlur={() => form.touch("password")}
-          placeholder="Password"
-          secureTextEntry
-          error={form.getError("password")}
-          showError={form.showError("password")}
-        />
+            <FormTextField
+              variant="pill"
+              value={email}
+              onChangeText={setEmail}
+              onBlur={() => form.touch("email")}
+              placeholder="Email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              error={form.getError("email")}
+              showError={form.showError("email")}
+            />
 
-        <FormTextField
-          value={repeatPassword}
-          onChangeText={setRepeatPassword}
-          onBlur={() => form.touch("repeatPassword")}
-          placeholder="Repeat password"
-          secureTextEntry
-          error={form.getError("repeatPassword")}
-          showError={form.showError("repeatPassword")}
-        />
+            <FormTextField
+              variant="pill"
+              value={password}
+              onChangeText={setPassword}
+              onBlur={() => form.touch("password")}
+              placeholder="Password"
+              secureTextEntry
+              error={form.getError("password")}
+              showError={form.showError("password")}
+            />
 
-        <FormSubmitButton
-          label={isUpgrade ? "Create account" : "Sign up"}
-          loadingLabel={isUpgrade ? "Creating account..." : "Signing up..."}
-          loading={isSubmitting}
-          disabled={!form.isValid}
-          onPress={async () => {
-            form.touchAll();
-            if (!form.isValid) return;
+            <FormTextField
+              variant="pill"
+              value={repeatPassword}
+              onChangeText={setRepeatPassword}
+              onBlur={() => form.touch("repeatPassword")}
+              placeholder="Repeat password"
+              secureTextEntry
+              error={form.getError("repeatPassword")}
+              showError={form.showError("repeatPassword")}
+            />
 
-            setIsSubmitting(true);
-            setSubmitError(null);
-            try {
-              await signUp(email.trim(), password, isUpgrade ? { linkDevice: true } : undefined);
-              if (isUpgrade) {
-                resetToTabs(router);
-              } else {
-                resetToOnboardingChoose(router);
-              }
-            } catch (e: unknown) {
-              setSubmitError(getUserFacingErrorMessage(e, "Sign up failed"));
-            } finally {
-              setIsSubmitting(false);
-            }
-          }}
-        />
+            <FormSubmitButton
+              label={isUpgrade ? "Create account" : "Sign up"}
+              loadingLabel={isUpgrade ? "Creating account..." : "Signing up..."}
+              loading={isSubmitting}
+              disabled={!form.isValid}
+              style={authScreenStyles.submitButton}
+              onPress={async () => {
+                form.touchAll();
+                if (!form.isValid) return;
 
-        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
+                setIsSubmitting(true);
+                setSubmitError(null);
+                try {
+                  await signUp(email.trim(), password, isUpgrade ? { linkDevice: true } : undefined);
+                  if (isUpgrade) {
+                    resetToTabs(router);
+                  } else {
+                    resetToOnboardingChoose(router);
+                  }
+                } catch (e: unknown) {
+                  setSubmitError(getUserFacingErrorMessage(e, "Sign up failed"));
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            />
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
-          <Link href={signInHref} style={styles.footerLink}>
-            Sign in
-          </Link>
+            {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
+
+            <View style={authScreenStyles.footerBlock}>
+              <Text style={authScreenStyles.footerPrompt}>
+                {isUpgrade ? "Already registered?" : "Already have an account?"}
+              </Text>
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    isUpgrade
+                      ? { pathname: routes.guest.signIn, params: { intent: "upgrade" } }
+                      : routes.guest.signIn,
+                  )
+                }
+                accessibilityRole="link"
+              >
+                <Text style={authScreenStyles.footerLink}>Sign in</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  ...modalScreenStyles,
-  footer: { flexDirection: "row", gap: 6, marginTop: 14, justifyContent: "center" },
-  footerText: { color: "#6b7280" },
-  footerLink: { color: "#2563eb", fontWeight: "700" },
+  upgradeNote: {
+    fontSize: 13,
+    color: colors.inputText,
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: -8,
+  },
 });

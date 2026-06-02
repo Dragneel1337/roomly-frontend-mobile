@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@apollo/client/react";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useAuth } from "@/src/features/auth/AuthProvider";
 import { CREATE_HOUSEHOLD } from "@/src/features/household/householdApi";
 import { joinHouseholdWithProfile } from "@/src/features/household/joinHouseholdFlow";
@@ -12,8 +12,9 @@ import { useProfileSetup } from "@/src/features/profile/useProfileSetup";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { ModalScreen } from "@/src/shared/components/ModalScreen";
 import { resetToTabs } from "@/src/shared/navigation/resetRoutes";
-import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -84,23 +85,29 @@ export default function CreateProfileScreen() {
   }
 
   return (
-    <ModalScreen title="Choose your name and avatar">
-      <View style={styles.container}>
-        <ProfileSetupFields setup={setup} />
+    <ModalScreen title="#Roomly">
+      <ScrollView
+        contentContainerStyle={authScreenStyles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={authScreenStyles.centerBlock}>
+          <View style={authScreenStyles.profileCard}>
+            <ProfileSetupFields setup={setup} />
 
-        <FormSubmitButton
-          label="Confirm"
-          loadingLabel="Setting up..."
-          loading={isSubmitting}
-          disabled={!setup.canSubmit}
-          onPress={onConfirm}
-        />
-        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
-      </View>
+            <FormSubmitButton
+              label="Confirm"
+              loadingLabel="Setting up..."
+              loading={isSubmitting}
+              disabled={!setup.canSubmit}
+              style={authScreenStyles.submitButton}
+              onPress={onConfirm}
+            />
+
+            {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
+          </View>
+        </View>
+      </ScrollView>
     </ModalScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  ...modalScreenStyles,
-});

@@ -38,6 +38,18 @@ export default function GuestLayout() {
           },
         }}
       />
+      <Stack.Screen
+        name="sign-up"
+        options={{
+          title: "#Roomly",
+          headerTitleAlign: "center",
+          headerTitleStyle: {
+            fontSize: 28,
+            fontWeight: "700",
+            color: colors.onHeader,
+          },
+        }}
+      />
     </Stack>
   );
 }

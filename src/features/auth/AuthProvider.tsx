@@ -20,7 +20,11 @@ import {
   setDeviceId,
   type AuthMode,
 } from "./deviceStore";
-import { getOnboardingComplete, setOnboardingComplete } from "./onboardingStore";
+import {
+  getOnboardingComplete,
+  resolveOnboardingComplete,
+  setOnboardingComplete,
+} from "./onboardingStore";
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from "./tokenStore";
 import { getHttpErrorStatus } from "@/src/shared/api/http";
 import { apolloClient } from "@/src/shared/api/apolloClient";
@@ -104,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const tokens = await loginWithDeviceRequest(deviceId);
             await setRefreshToken(tokens.refreshToken);
             setHeldAccessToken(tokens.accessToken);
+            const stored = await getOnboardingComplete();
             const backend = await fetchHasHousehold();
-            const complete = backend ?? ((await getOnboardingComplete()) ?? false);
+            const complete = resolveOnboardingComplete(backend, stored, false);
             await setOnboardingComplete(complete);
             if (!cancelled) {
               setAccessToken(tokens.accessToken);
@@ -139,8 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthModeState(storedMode ?? "email");
       }
 
+      const stored = await getOnboardingComplete();
       const backend = await fetchHasHousehold();
-      const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+      const complete = resolveOnboardingComplete(backend, stored, true);
       await setOnboardingComplete(complete);
       if (!cancelled) setIsOnboardingCompleteState(complete);
       await finishBootstrap();
@@ -172,7 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         backend = null;
       }
-      const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+      const stored = await getOnboardingComplete();
+      const complete = resolveOnboardingComplete(backend, stored, true);
       await setOnboardingComplete(complete);
       setIsOnboardingCompleteState(complete);
       return complete;
@@ -192,8 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(tokens.accessToken);
 
       if (options?.linkDevice) {
+        const stored = await getOnboardingComplete();
         const backend = await fetchHasHousehold();
-        const complete = backend ?? ((await getOnboardingComplete()) ?? true);
+        const complete = resolveOnboardingComplete(backend, stored, true);
         await setOnboardingComplete(complete);
         setIsOnboardingCompleteState(complete);
       } else {

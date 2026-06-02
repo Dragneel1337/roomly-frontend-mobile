@@ -1,22 +1,23 @@
-import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { AvatarColorPickerModal } from "@/src/features/profile/AvatarColorPickerModal";
-import {
-  resolveColorLabel,
-  resolveHexForDisplay,
-} from "@/src/features/profile/avatarColorCatalog";
+import type { AvatarColor } from "@/src/features/household/householdApi";
+import { AvatarImagePreview } from "@/src/features/profile/AvatarImagePreview";
+import { resolveHexForDisplay } from "@/src/features/profile/avatarColorCatalog";
+import { isAvatarTaken, isColorTaken } from "@/src/features/profile/profileAvailability";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { NavChevronIcon } from "@/src/shared/navigation/NavChevronIcon";
+import { authPillShadow, authScreenStyles } from "@/src/shared/theme/authScreenStyles";
+import { colors } from "@/src/shared/theme/colors";
 import type { useProfileSetup } from "./useProfileSetup";
 
 type ProfileSetupFieldsProps = {
   setup: ReturnType<typeof useProfileSetup>;
 };
 
-export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
-  const [pickerVisible, setPickerVisible] = useState(false);
+const SWATCH_SIZE = 52;
 
+export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
   const {
     nickname,
     setNickname,
@@ -25,113 +26,207 @@ export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
     avatarOptions,
     colorOptions,
     taken,
-    hasTakenOptions,
     optionsLoading,
     optionsError,
     refetchOptions,
     form,
-    applyPickerSelection,
+    cycleAvatar,
+    selectColor,
     selectionTakenError,
   } = setup;
 
-  const previewBorderColor =
-    selectedColor && selectedAvatarName
-      ? resolveHexForDisplay(selectedColor)
-      : "#e5e7eb";
+  const avatarTaken =
+    !!selectedAvatarName && isAvatarTaken(selectedAvatarName, taken);
+  const canCycleAvatars = avatarOptions.available.length > 1;
+
+  if (optionsLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.textPrimary} />
+      </View>
+    );
+  }
+
+  if (optionsError) {
+    return (
+      <View style={styles.loading}>
+        <Text style={formStyles.submitError}>
+          {getUserFacingErrorMessage(optionsError, "Could not load avatars")}
+        </Text>
+        <Pressable style={styles.retryButton} onPress={() => void refetchOptions()}>
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <>
-      <Text style={styles.label}>Nickname</Text>
+      <Text style={authScreenStyles.cardTitle}>Choose your avatar</Text>
+      <Text style={authScreenStyles.cardSubtitle}>(you can change it later)</Text>
+
+      <View style={styles.avatarRow}>
+        {canCycleAvatars ? (
+          <Pressable
+            accessibilityLabel="Previous avatar"
+            hitSlop={12}
+            onPress={() => cycleAvatar(-1)}
+            style={styles.chevronHit}
+          >
+            <NavChevronIcon direction="left" height={26} style={styles.chevronLeft} />
+          </Pressable>
+        ) : (
+          <View style={styles.chevronSpacer} />
+        )}
+
+        <AvatarImagePreview
+          avatarName={selectedAvatarName}
+          color={selectedColor}
+          dimmed={avatarTaken}
+        />
+
+        {canCycleAvatars ? (
+          <Pressable
+            accessibilityLabel="Next avatar"
+            hitSlop={12}
+            onPress={() => cycleAvatar(1)}
+            style={styles.chevronHit}
+          >
+            <NavChevronIcon direction="right" height={26} style={styles.chevronRight} />
+          </Pressable>
+        ) : (
+          <View style={styles.chevronSpacer} />
+        )}
+      </View>
+
       <FormTextField
+        variant="pill"
         value={nickname}
         onChangeText={setNickname}
         onBlur={() => form.touch("nickname")}
-        placeholder="Your nickname"
+        placeholder="Name"
         error={form.getError("nickname")}
         showError={form.showError("nickname")}
       />
 
-      {optionsLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator />
-        </View>
-      ) : optionsError ? (
-        <View style={styles.loading}>
-          <Text style={formStyles.submitError}>
-            {getUserFacingErrorMessage(optionsError, "Could not load avatars")}
-          </Text>
-          <Pressable style={styles.pill} onPress={() => void refetchOptions()}>
-            <Text style={styles.pillText}>Try again</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.label}>Avatar & color</Text>
-          {hasTakenOptions ? (
-            <Text style={styles.legend}>
-              Gray options at the end of the list are already used in this household.
-            </Text>
-          ) : null}
-
-          <Pressable
-            style={[styles.previewCard, { borderColor: previewBorderColor }]}
-            onPress={() => setPickerVisible(true)}
-          >
-            <Text style={styles.previewAvatar}>{selectedAvatarName ?? "Pick a look"}</Text>
-            <Text
-              style={[
-                styles.previewColor,
-                selectedColor ? { color: resolveHexForDisplay(selectedColor) } : null,
-              ]}
-            >
-              {selectedColor ? resolveColorLabel(selectedColor) : "Tap to choose"}
-            </Text>
-            <Text style={styles.changeLink}>Change look</Text>
-          </Pressable>
-
-          {!!selectionTakenError && (
-            <Text style={formStyles.submitError}>{selectionTakenError}</Text>
-          )}
-        </>
-      )}
-
-      <AvatarColorPickerModal
-        visible={pickerVisible}
-        avatarOptions={avatarOptions}
-        colorOptions={colorOptions}
+      <Text style={authScreenStyles.fieldLabel}>Choose color</Text>
+      <ColorSwatchGrid
+        colors={colorOptions.ordered}
+        selectedColor={selectedColor}
         taken={taken}
-        initialAvatarName={selectedAvatarName}
-        initialColor={selectedColor}
-        onClose={() => setPickerVisible(false)}
-        onDone={(avatarName, color) => {
-          applyPickerSelection(avatarName, color);
-          setPickerVisible(false);
-        }}
+        onSelect={selectColor}
       />
+
+      {!!selectionTakenError && (
+        <Text style={formStyles.submitError}>{selectionTakenError}</Text>
+      )}
     </>
   );
 }
 
+type ColorSwatchGridProps = {
+  colors: AvatarColor[];
+  selectedColor: AvatarColor | null;
+  taken: { takenAvatarNames: Set<string>; takenColorNames: Set<string> };
+  onSelect: (color: AvatarColor) => void;
+};
+
+function ColorSwatchGrid({ colors: colorList, selectedColor, taken, onSelect }: ColorSwatchGridProps) {
+  return (
+    <View style={styles.colorGrid}>
+      {colorList.map((color) => {
+        const takenColor = isColorTaken(color, taken);
+        const selected = selectedColor?.name === color.name;
+
+        return (
+          <Pressable
+            key={color.name}
+            accessibilityLabel={color.name}
+            accessibilityState={{ selected, disabled: takenColor }}
+            disabled={takenColor}
+            onPress={() => onSelect(color)}
+            style={styles.swatchCell}
+          >
+            <View
+              style={[
+                styles.swatch,
+                { backgroundColor: resolveHexForDisplay(color) },
+                selected && styles.swatchSelected,
+                takenColor && styles.swatchTaken,
+              ]}
+            />
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  label: { fontSize: 14, fontWeight: "600", marginTop: 6 },
-  legend: { color: "#6b7280", fontSize: 13, marginBottom: 4 },
-  loading: { paddingVertical: 24, alignItems: "center", gap: 12 },
-  pill: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-  },
-  pillText: { fontWeight: "600" },
-  previewCard: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 16,
+  loading: {
+    paddingVertical: 32,
     alignItems: "center",
-    backgroundColor: "#fafafa",
+    gap: 12,
   },
-  previewAvatar: { fontSize: 18, fontWeight: "700" },
-  previewColor: { marginTop: 4, fontWeight: "600" },
-  changeLink: { marginTop: 10, color: "#2563eb", fontWeight: "700" },
+  retryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    backgroundColor: colors.button,
+  },
+  retryText: {
+    color: colors.white,
+    fontWeight: "600",
+  },
+  avatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginVertical: 4,
+  },
+  chevronHit: {
+    padding: 4,
+  },
+  chevronSpacer: {
+    width: 34,
+    height: 34,
+  },
+  chevronLeft: {
+    marginLeft: 0,
+  },
+  chevronRight: {
+    marginLeft: 0,
+  },
+  colorGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    columnGap: 18,
+    rowGap: 18,
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  swatchCell: {
+    width: "22%",
+    minWidth: 56,
+    maxWidth: 68,
+    alignItems: "center",
+    paddingVertical: 2,
+  },
+  swatch: {
+    width: SWATCH_SIZE,
+    height: SWATCH_SIZE,
+    borderRadius: SWATCH_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.textPrimary,
+    ...authPillShadow,
+  },
+  swatchSelected: {
+    borderWidth: 4,
+    borderColor: colors.textPrimary,
+  },
+  swatchTaken: {
+    opacity: 0.35,
+  },
 });
