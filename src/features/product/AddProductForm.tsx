@@ -11,6 +11,7 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
+import { avatarSizes, getAvatarStackOverlap } from "@/src/features/profile/avatarDisplay";
 import type { PendingProduct } from "@/src/features/product/pendingProduct";
 import { displayBrand } from "@/src/features/product/productDisplay";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
@@ -93,14 +94,26 @@ export function AddProductForm({
           selected={visibility === "private"}
           disabled={busy}
           onPress={() => onVisibilityChange("private")}
-          trailing={<MemberAvatarStack members={[privateMember]} />}
+          trailing={
+            <MemberAvatarStack
+              members={[privateMember]}
+              size={avatarSizes.visibilityPicker}
+              overlap={getAvatarStackOverlap(avatarSizes.visibilityPicker)}
+            />
+          }
         />
         <VisibilityOption
           label="Shared"
           selected={visibility === "shared"}
           disabled={busy}
           onPress={() => onVisibilityChange("shared")}
-          trailing={<MemberAvatarStack members={sharedMembers} />}
+          trailing={
+            <MemberAvatarStack
+              members={sharedMembers}
+              size={avatarSizes.visibilityPicker}
+              overlap={getAvatarStackOverlap(avatarSizes.visibilityPicker)}
+            />
+          }
         />
       </View>
 

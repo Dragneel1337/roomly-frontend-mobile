@@ -5,6 +5,7 @@ import {
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
 import { profileToAvatarSource } from "@/src/features/household/profileAvatar";
+import { avatarSizes, getAvatarStackOverlap } from "@/src/features/profile/avatarDisplay";
 import type { ProfileListResource } from "@/src/features/household/householdResourcesApi";
 import type { FridgeDisplayItem } from "@/src/features/inventory/useFridgeInventories";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
@@ -94,6 +95,8 @@ export function FridgeProductList({
             <View style={styles.ownersCol}>
               <MemberAvatarStack
                 members={row.isShared ? sharedAvatars : [privateAvatar]}
+                size={avatarSizes.listOwner}
+                overlap={getAvatarStackOverlap(avatarSizes.listOwner)}
               />
             </View>
           </Pressable>
@@ -128,7 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ownersCol: {
-    width: 80,
+    minWidth: 108,
     alignItems: "flex-end",
     justifyContent: "center",
   },

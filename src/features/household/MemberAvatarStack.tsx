@@ -93,6 +93,7 @@ function MemberAvatarChip({
       uri={imageUri}
       size={size}
       variant="chip"
+      avatarName={member.avatarName}
       style={style}
       onError={() => setFailed(true)}
     />

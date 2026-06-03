@@ -4,6 +4,7 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
+import { avatarSizes, getAvatarStackOverlap } from "@/src/features/profile/avatarDisplay";
 import { displayBrand } from "@/src/features/product/productDisplay";
 import { authCardShadow } from "@/src/shared/theme/authScreenStyles";
 import { colors } from "@/src/shared/theme/colors";
@@ -63,7 +64,11 @@ export function FridgeProductDetailCard({
           </View>
         </View>
         <View style={styles.ownerSlot}>
-          <MemberAvatarStack members={owners} />
+          <MemberAvatarStack
+            members={owners}
+            size={avatarSizes.listOwner}
+            overlap={getAvatarStackOverlap(avatarSizes.listOwner)}
+          />
         </View>
       </View>
 
