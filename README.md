@@ -6,7 +6,9 @@
 [![Apollo](https://img.shields.io/badge/Apollo%20Client-4.2-311C87.svg)](https://www.apollographql.com/docs/react)
 [![GraphQL](https://img.shields.io/badge/GraphQL-Client-E10098.svg)](https://graphql.org/)
 
-The official **Roomly** mobile client for shared household management — shopping lists, fridge inventory, calendar events, transactions, and per-household member profiles. The app consumes the [ROOMLY GraphQL API](../ROOMLY-API-main/README.md) via Apollo Client and selected REST endpoints.
+**Roomly mobile client** (this repository) for shared household management — shopping lists, fridge inventory, calendar events, transactions, and member profiles.
+
+The app is a **standalone frontend**: it talks to an external **ROOMLY GraphQL API** (developed separately by Florczak Mikołaj) over Apollo Client and a few REST endpoints. The `ROOMLY-API-main/` folder in the parent monorepo is only a **local reference copy** of that API (schema, docs) — not part of this app's codebase.
 
 ---
 
@@ -116,7 +118,7 @@ A single **account** can hold multiple **profiles** across different households,
 
 - **Node.js** 20+ (LTS recommended)
 - **npm** 10+
-- A running **ROOMLY API** instance — see [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md)
+- A running **ROOMLY API** instance (deployed separately) — API docs for reference: [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md)
 - **Android Studio** (Android emulator) and/or **Xcode** (iOS simulator, macOS only)
 - Optional: [Expo Go](https://expo.dev/go) on a physical device (same Wi‑Fi as dev machine; some native features limited)
 
@@ -267,7 +269,7 @@ Feature-level operations are colocated:
 | Calendar | `calendar/eventsApi.ts` |
 | Product lookup | `shoppingList` GraphQL `product(barcode)` + OFF search in `product/openFoodFactsApi.ts` |
 
-For the full server schema, see [ROOMLY-API-main/docs](../ROOMLY-API-main/docs/).
+For the full server schema (reference), see [ROOMLY-API-main/docs](../ROOMLY-API-main/docs/). API changes are made in the API repository, not in this mobile project.
 
 ### REST (secondary)
 
@@ -424,7 +426,7 @@ import { routes } from "@/src/shared/routes";
 | GraphQL 401 loop | API `JWT_SECRET_KEY` set; clock skew; try sign out/in |
 | Barcode / camera not working | Use `npx expo run:android` / `ios`, not Expo Go |
 | Avatar images blank | API running; `/open/api/avatars/…` reachable; check color query param |
-| Profile update fails (color only) | Backend must exclude current profile in uniqueness check — see API team |
+| Profile update fails (color only) | Known API constraint: `updateProfile` must exclude the current profile when checking avatar/color uniqueness — fix belongs in the API project |
 
 ---
 
@@ -438,7 +440,7 @@ import { routes } from "@/src/shared/routes";
 6. **Checks** — `npm run lint` and `npx tsc --noEmit` before PR.
 7. **Commits** — Small, focused commits with clear messages.
 
-Backend is maintained separately (`ROOMLY-API-main/` in this monorepo is reference-only for mobile developers).
+Do **not** change `ROOMLY-API-main/` when working on mobile UI — that tree is a read-only reference. Report API bugs or schema changes to the API maintainer.
 
 ---
 
@@ -446,16 +448,10 @@ Backend is maintained separately (`ROOMLY-API-main/` in this monorepo is referen
 
 | Path | Description |
 |---|---|
-| [`roomly-frontend-mobile/`](.) | This repository — mobile client |
-| [`ROOMLY-API-main/`](../ROOMLY-API-main/) | GraphQL API (Java / Spring Boot) |
+| [`roomly-frontend-mobile/`](.) | **This project** — Expo / React Native app (you develop here) |
+| [`ROOMLY-API-main/`](../ROOMLY-API-main/) | **External API** (Florczak Mikołaj) — reference copy for GraphQL docs only |
 | [`roomly-design.md`](../roomly-design.md) | Design system tokens & rules |
 | [`README.md`](../README.md) | Monorepo overview |
-
----
-
-## Authors
-
-**Florczak Mikołaj** — project creator (API); mobile app developed as part of the Roomly product.
 
 ---
 
@@ -465,10 +461,10 @@ Backend is maintained separately (`ROOMLY-API-main/` in this monorepo is referen
 - [Expo Router](https://docs.expo.dev/router/introduction/) — navigation
 - [Apollo Client](https://www.apollographql.com/docs/react/) — GraphQL client
 - [Open Food Facts](https://world.openfoodfacts.org/) — product search data
-- [ROOMLY API](../ROOMLY-API-main/README.md) — backend services
+- [ROOMLY GraphQL API](../ROOMLY-API-main/README.md) — backend by **Florczak Mikołaj** (consumed by this client; not maintained in this repo)
 
 ---
 
 ## License
 
-Private Roomly team project. Contact repository maintainers for licensing and distribution.
+Private project. Licensing and distribution as agreed by the mobile app maintainers.
