@@ -1,6 +1,5 @@
 /**
- * ROOMLY design tokens — see roomly-design.md (repo root).
- * Do not add colors outside this file for UI work.
+ * ROOMLY design tokens (Figma). Do not add colors outside this file for UI work.
  */
 export const colors = {
   button: "#36455e",

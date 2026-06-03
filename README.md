@@ -6,15 +6,18 @@
 [![Apollo](https://img.shields.io/badge/Apollo%20Client-4.2-311C87.svg)](https://www.apollographql.com/docs/react)
 [![GraphQL](https://img.shields.io/badge/GraphQL-Client-E10098.svg)](https://graphql.org/)
 
-**Roomly mobile client** (this repository) for shared household management — shopping lists, fridge inventory, calendar events, transactions, and member profiles.
+Expo / React Native client for **Roomly** — shared household management (shopping lists, fridge inventory, calendar, transactions, member profiles).
 
-The app is a **standalone frontend**: it talks to an external **ROOMLY GraphQL API** (developed separately by Florczak Mikołaj) over Apollo Client and a few REST endpoints. The `ROOMLY-API-main/` folder in the parent monorepo is only a **local reference copy** of that API (schema, docs) — not part of this app's codebase.
+This repository contains **only the mobile app**. It talks to the **ROOMLY API** (GraphQL + REST) over `EXPO_PUBLIC_API_BASE_URL`.
+
+The backend lives in a **separate project** — [ROOMLY-API-main](../ROOMLY-API-main/). That folder is not part of this repo; in this workspace it is usually a **local copy for reference** (schema, docs, running the server locally). **How to install, configure, and run the API** is documented there: [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md). Do not look here for Gradle, JWT, or database setup.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Backend (ROOMLY API)](#backend-roomly-api)
 - [Technology Stack](#technology-stack)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
@@ -29,27 +32,45 @@ The app is a **standalone frontend**: it talks to an external **ROOMLY GraphQL A
 - [Project Structure](#project-structure)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
-- [Related Repositories](#related-repositories)
 
 ---
 
 ## Overview
 
-Roomly organizes daily household life around a **household** — a shared space with its own members, lists, inventory, and calendar. The mobile app is the primary touchpoint for members to view and update that shared state.
+Roomly organizes daily household life around a **household** — a shared space with its own members, lists, inventory, and calendar.
 
-**Core capabilities in the client:**
+**Core capabilities in this app:**
 
-- **Authentication** — email/password accounts or passwordless **device-only** mode (local-first until upgraded)
-- **Onboarding** — create a household, join via 6-character join code, set up profile (avatar + color + nickname)
-- **Shopping** — personal and shared shopping lists; search products (Open Food Facts); add with quantity, notes, and visibility
-- **Fridge** — personal and shared inventory; barcode scan; product detail with quantity and removal
-- **Calendar** — create, view, and edit household events with attendees
-- **Home** — recent activity and in-app notifications (REST)
-- **Transactions** — tab scaffold (household finances; UI in progress)
-- **Settings** — household join code, switch/join households, leave/delete household, sign out or upgrade account
-- **Profile** — view and edit appearance (opened from header avatar)
+- **Authentication** — email/password or passwordless **device-only** mode (upgrade to email account from Settings)
+- **Onboarding** — create / join household (join code), profile setup (avatar, color, nickname)
+- **Shopping** — private and shared lists; product search; quantity, notes, visibility
+- **Fridge** — private and shared inventory; barcode scan; product detail and quantity
+- **Calendar** — household events with attendees
+- **Home** — activity and notifications (REST)
+- **Transactions** — tab scaffold (UI in progress)
+- **Settings** — join code, switch/join households, leave/delete household, sign out
+- **Profile** — view and edit appearance (header avatar)
 
-A single **account** can hold multiple **profiles** across different households, each with its own nickname, avatar, shopping list, and inventory.
+One **account** can have multiple **profiles** in different households.
+
+---
+
+## Backend (ROOMLY API)
+
+| | |
+|---|---|
+| **What you develop here** | `roomly-frontend-mobile` (this README) |
+| **What the app calls** | ROOMLY API — Spring Boot, GraphQL at `/graphql`, auth and notifications under `/auth/*`, `/api/…` |
+| **Where backend docs live** | [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md) — **separate repository**; setup, env vars, `bootRun`, troubleshooting |
+| **Optional reference in workspace** | [ROOMLY-API-main/docs/](../ROOMLY-API-main/docs/) — queries, mutations, DTOs (read-only when aligning the client) |
+
+Typical local flow:
+
+1. Start the API using instructions in **ROOMLY-API-main** (default `http://localhost:8080`).
+2. Point this app at that origin in `.env` (see [API base URL examples](#api-base-url-examples)).
+3. Run `npx expo start` in **roomly-frontend-mobile**.
+
+You can also use a **deployed** API URL — the mobile app only needs a reachable `EXPO_PUBLIC_API_BASE_URL`, not the API sources on disk.
 
 ---
 
@@ -60,11 +81,12 @@ A single **account** can hold multiple **profiles** across different households,
 | Runtime | [Expo SDK 55](https://docs.expo.dev/) |
 | UI | [React Native](https://reactnative.dev/) 0.83, [React](https://react.dev/) 19 |
 | Language | [TypeScript](https://www.typescriptlang.org/) 5.9 (strict) |
-| Routing | [Expo Router](https://docs.expo.dev/router/introduction/) 55 (file-based, typed routes) |
-| GraphQL | [Apollo Client](https://www.apollographql.com/docs/react/) 4 + [GraphQL](https://graphql.org/) 16 |
-| HTTP | `fetch` wrapper (`src/shared/api/http.ts`) for REST auth & notifications |
-| Secure storage | `expo-secure-store` (refresh token, device id, session keys) |
-| Media | `expo-image`, `expo-camera` (barcode) |
+| Routing | [Expo Router](https://docs.expo.dev/router/introduction/) 55 |
+| GraphQL | [Apollo Client](https://www.apollographql.com/docs/react/) 4 |
+| HTTP | `src/shared/api/http.ts` |
+| Secure storage | `expo-secure-store` |
+| Camera / barcode | `expo-camera` |
+| Images | `expo-image` |
 | Notifications | `expo-notifications` (development builds) |
 | Lint | ESLint + `eslint-config-expo` |
 
@@ -75,40 +97,29 @@ A single **account** can hold multiple **profiles** across different households,
 ### High-level data flow
 
 ```
-┌─────────────┐     JWT (Bearer)      ┌──────────────────┐
-│  Mobile UI  │ ────────────────────► │  ROOMLY API      │
-│  (Expo RN)  │ ◄──────────────────── │  /graphql        │
-└─────────────┘     GraphQL + REST    │  /auth/*         │
-       │                              │  /api/notifications
-       │                              └──────────────────┘
-       ▼
-┌─────────────────────────────────────────────────────────┐
-│  Providers (app/_layout.tsx)                            │
-│  SafeAreaProvider → AuthProvider → ApolloProvider →     │
-│  HouseholdProvider → Stack                              │
-└─────────────────────────────────────────────────────────┘
+┌─────────────┐     JWT (Bearer)      ┌──────────────────────────┐
+│  Mobile UI  │ ────────────────────► │  ROOMLY API (external)   │
+│  (Expo RN)  │ ◄──────────────────── │  /graphql, /auth/*, …  │
+└─────────────┘                       └──────────────────────────┘
        │
-       ├── AuthProvider      access/refresh tokens, onboarding flag
-       ├── Apollo Client     GraphQL + auto token refresh on 401/403
-       └── HouseholdProvider active household + profile + resources
+       ▼
+  app/_layout.tsx
+  SafeAreaProvider → AuthProvider → ApolloProvider → HouseholdProvider → Stack
 ```
 
 ### Key design decisions
 
-**Thin routes, fat features** — Files under `app/` define navigation and screen composition only. Business logic, hooks, and API calls live in `src/features/<domain>/`.
+**Thin routes, fat features** — `app/` = navigation; `src/features/<domain>/` = logic and UI.
 
-**Centralized routes** — All path constants are in `src/shared/routes.ts` to avoid stringly-typed navigation.
+**Centralized routes** — `src/shared/routes.ts`.
 
-**Shared product module** — Adding a product (search, barcode, form, Open Food Facts) is implemented once in `src/features/product/` and reused by Shopping and Fridge flows.
+**Shared product module** — `src/features/product/` for search, scanner, and `AddProductForm` (Shopping + Fridge).
 
-**Household session gate** — `(tabs)/` screens are wrapped in `HouseholdSessionGate` so lists and inventory never render without a resolved `activeHouseholdId` + `activeProfileId`.
+**Household session gate** — `HouseholdSessionGate` on tabs until `activeHouseholdId` + `activeProfileId` are set.
 
-**Personal vs shared resources** — Shopping lists and inventories mirror the API model: each profile has private resources; the household also has shared list/inventory IDs from `householdResources` query.
+**Design tokens** — `src/shared/theme/` (`colors.ts`, `spacing.ts`, `authScreenStyles.ts`). No ad-hoc hex in features.
 
-**Design tokens** — UI colors and spacing come from `src/shared/theme/` aligned with [`roomly-design.md`](../roomly-design.md). Avoid hard-coded hex values in feature code.
-
-**Avatar images** — Profile avatars are loaded from the API REST endpoint  
-`GET /open/api/avatars/{name}?color=…` (see `src/features/profile/avatarImageUrl.ts`).
+**Avatars** — `GET {API_BASE_URL}/open/api/avatars/{name}?color=…` (`src/features/profile/avatarImageUrl.ts`).
 
 ---
 
@@ -116,11 +127,10 @@ A single **account** can hold multiple **profiles** across different households,
 
 ### Prerequisites
 
-- **Node.js** 20+ (LTS recommended)
-- **npm** 10+
-- A running **ROOMLY API** instance (deployed separately) — API docs for reference: [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md)
-- **Android Studio** (Android emulator) and/or **Xcode** (iOS simulator, macOS only)
-- Optional: [Expo Go](https://expo.dev/go) on a physical device (same Wi‑Fi as dev machine; some native features limited)
+- Node.js 20+
+- npm 10+
+- A running **ROOMLY API** (see [Backend (ROOMLY API)](#backend-roomly-api) — run it from [ROOMLY-API-main](../ROOMLY-API-main/) or use a deployed instance)
+- Android Studio and/or Xcode (optional: Expo Go on device)
 
 ### Installation
 
@@ -130,26 +140,24 @@ cd roomly-frontend-mobile
 
 npm install
 cp .env.example .env
-# Edit .env — set EXPO_PUBLIC_API_BASE_URL (see below)
+# Set EXPO_PUBLIC_API_BASE_URL
 
 npx expo start
 ```
 
-| Expo CLI key | Action |
+| Key | Action |
 |---|---|
-| `a` | Open Android emulator |
-| `i` | Open iOS simulator |
-| QR | Open in Expo Go (physical device) |
+| `a` | Android emulator |
+| `i` | iOS simulator |
+| QR | Expo Go |
 
-After changing `.env`, clear Metro cache:
+After `.env` changes:
 
 ```bash
 npx expo start -c
 ```
 
-### Development build (recommended for camera & notifications)
-
-Expo Go does not expose all native modules (barcode scanner, system notifications). Use a dev build:
+### Development build (camera & system notifications)
 
 ```bash
 npx expo run:android
@@ -157,15 +165,15 @@ npx expo run:android
 npx expo run:ios
 ```
 
-### Connect to a local API
+### API base URL examples
 
-| Target | Typical `EXPO_PUBLIC_API_BASE_URL` |
+| Target | `EXPO_PUBLIC_API_BASE_URL` |
 |---|---|
-| Android emulator → host machine | `http://10.0.2.2:8080` |
+| Android emulator → host | `http://10.0.2.2:8080` |
 | iOS simulator | `http://localhost:8080` |
-| Physical device (same LAN) | `http://<your-computer-lan-ip>:8080` |
+| Physical device (LAN) | `http://<lan-ip>:8080` |
 
-GraphQL endpoint used by the app: `{EXPO_PUBLIC_API_BASE_URL}/graphql`
+GraphQL: `{EXPO_PUBLIC_API_BASE_URL}/graphql`
 
 ---
 
@@ -173,17 +181,17 @@ GraphQL endpoint used by the app: `{EXPO_PUBLIC_API_BASE_URL}/graphql`
 
 | Variable | Required | Description |
 |---|---|---|
-| `EXPO_PUBLIC_API_BASE_URL` | yes | API origin **without** trailing slash and **without** `/graphql` |
+| `EXPO_PUBLIC_API_BASE_URL` | yes | API origin, no trailing slash, no `/graphql` |
 
-Example `.env`:
+Example:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080
 ```
 
-Loaded in `src/shared/config.ts`. If missing, the app throws at startup with instructions to copy `.env.example`.
+Read in `src/shared/config.ts`. Missing value → startup error with hint to use `.env.example`.
 
-> **Note:** Expo inlines `EXPO_PUBLIC_*` variables at bundle time. Always restart the dev server after editing `.env`.
+Restart Expo after editing `.env` (variables are inlined at bundle time).
 
 ---
 
@@ -191,181 +199,106 @@ Loaded in `src/shared/config.ts`. If missing, the app throws at startup with ins
 
 ```
 app/index.tsx
-    │
-    ├─ not authenticated ──► (guest)/welcome → sign-in / sign-up
-    │
-    ├─ authenticated, onboarding incomplete
-    │       ├─ email account ──► (onboarding)/choose-household → create/join → create-profile
-    │       └─ device-only ──► (guest)/welcome (upgrade path available)
-    │
-    └─ authenticated, onboarding complete ──► (tabs)/home
+  ├─ guest → (guest)/welcome, sign-in, sign-up
+  ├─ auth + incomplete onboarding → (onboarding)/…
+  └─ ready → (tabs)/home
 ```
 
-**Household switch** — Stored mapping `householdId → profileId` in Secure Store; `HouseholdProvider` restores the last active household on launch.
+Household ↔ profile mapping persisted in Secure Store (`HouseholdProvider`).
 
 ---
 
 ## Navigation & Screens
 
-### Route groups
-
-| Group | Purpose | Auth |
-|---|---|---|
-| `(guest)/` | Welcome, sign-in, sign-up | Public |
-| `(onboarding)/` | Choose / create / join household, create profile | Authenticated |
-| `(tabs)/` | Main app: home, shopping, fridge, calendar, transactions, settings | Authenticated + household |
-| `(modals)/` | Flows pushed on top: add product, profile, events, switch household | Authenticated |
-
-### Tab bar
-
-Custom `RoomlyTabBar` + `TabAppHeader` (`#Roomly`, profile avatar). Visible tabs:
-
-| Tab | Screen | Status |
-|---|---|---|
-| Shopping | `(tabs)/shopping` | Full UI |
-| Fridge | `(tabs)/fridge` | Full UI |
-| Calendar | `(tabs)/calendar` | Full UI |
-| Transactions | `(tabs)/transactions` | Scaffold |
-| Settings | `(tabs)/settings` | Full UI |
-| Home | `(tabs)/home` | Hidden from tab bar (`href: null`); reachable via header title |
-
-Settings tab hides the household name subheader under the main header.
-
-### Notable modals
-
-| Route | Description |
+| Group | Purpose |
 |---|---|
-| `add-shopping-item` | Product search → add to shopping list |
-| `add-shopping-product` | Quantity, visibility, notes, confirm |
-| `add-fridge-item` | Product search for inventory |
-| `add-fridge-scan` | Barcode scanner → product screen |
-| `add-fridge-product` | Add to fridge (private/shared) |
-| `fridge-product-detail` | View/edit quantity, remove |
-| `profile` | View / customize profile |
-| `add-event` / `event-detail` | Calendar CRUD |
-| `switch-household` / `join-household` | Multi-household management |
+| `(guest)/` | Welcome, auth |
+| `(onboarding)/` | Household + profile setup |
+| `(tabs)/` | Main app |
+| `(modals)/` | Add product, profile, events, switch household, … |
 
-Legacy redirects: `(modals)/settings` → settings tab; `(modals)/upgrade` → sign-in with `intent=upgrade`.
+**Tabs:** Shopping, Fridge, Calendar, Transactions (scaffold), Settings. Home is hidden from tab bar (`href: null`), opened from `#Roomly` in header.
+
+**Modals (examples):** `add-shopping-item`, `add-shopping-product`, `add-fridge-item`, `add-fridge-scan`, `add-fridge-product`, `fridge-product-detail`, `profile`, `add-event`, `event-detail`, `switch-household`, `join-household`.
+
+Redirects: `(modals)/settings` → settings tab; `(modals)/upgrade` → sign-in with `intent=upgrade`.
 
 ---
 
 ## API Integration
 
-### GraphQL (primary)
+### GraphQL
 
-- **Endpoint:** `POST {API_BASE_URL}/graphql`
-- **Client:** `src/shared/api/apolloClient.ts`
-- **Auth:** `Authorization: Bearer <access_token>` via `SetContextLink`
-- **Refresh:** On 401/403, `ErrorLink` calls `refreshAccessToken()` once and retries the operation
+- Client: `src/shared/api/apolloClient.ts`
+- Auth header + automatic refresh on 401/403
 
-Feature-level operations are colocated:
-
-| Feature | API module |
+| Feature | Module |
 |---|---|
-| Household | `household/householdApi.ts`, `household/householdResourcesApi.ts` |
-| Profile | `profile/profileApi.ts` |
-| Shopping | `shoppingList/shoppingListApi.ts` |
-| Inventory | `inventory/inventoryApi.ts` |
-| Calendar | `calendar/eventsApi.ts` |
-| Product lookup | `shoppingList` GraphQL `product(barcode)` + OFF search in `product/openFoodFactsApi.ts` |
+| Household | `src/features/household/householdApi.ts`, `householdResourcesApi.ts` |
+| Profile | `src/features/profile/profileApi.ts` |
+| Shopping | `src/features/shoppingList/shoppingListApi.ts` |
+| Inventory | `src/features/inventory/inventoryApi.ts` |
+| Calendar | `src/features/calendar/eventsApi.ts` |
+| Barcode product | GraphQL `product(barcode)` via `useInventory` / shopping hooks |
+| Name search | `src/features/product/openFoodFactsApi.ts` (client-side OFF) |
 
-For the full server schema (reference), see [ROOMLY-API-main/docs](../ROOMLY-API-main/docs/). API changes are made in the API repository, not in this mobile project.
+### REST (this repo)
 
-### REST (secondary)
-
-| Endpoint | Used for |
+| Endpoint | Module |
 |---|---|
-| `POST /auth/login` | Email login |
-| `POST /auth/register` | Registration (+ optional `deviceId` upgrade) |
-| `GET /auth/refresh?t=…` | Access token refresh |
-| `POST /auth/device/register` | Device-only account |
-| `POST /auth/device/login` | Device-only login |
-| `GET /api/notifications` | Home notification feed |
-| `POST /api/notifications/markAsRead` | Mark notifications read |
-| `GET /open/api/avatars/{name}` | Avatar images |
+| `/auth/*` | `src/features/auth/authApi.ts` |
+| `/api/notifications` | `src/features/notifications/notificationsApi.ts` |
+| `/open/api/avatars/{name}` | `src/features/profile/avatarImageUrl.ts` |
 
-Implemented in `src/features/auth/authApi.ts` and `src/features/notifications/notificationsApi.ts`.
+Operations in this repo follow the server contract. For field names, mutations, and DTO shapes, use the API project docs when you have the workspace copy: [ROOMLY-API-main/docs/queries.md](../ROOMLY-API-main/docs/queries.md), [mutations.md](../ROOMLY-API-main/docs/mutations.md), [dto.md](../ROOMLY-API-main/docs/dto.md). **Implementing or fixing the server** → [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md), not this repository.
 
 ---
 
 ## Authentication & Session
 
-### Modes
+| Mode | Description |
+|---|---|
+| Email/password | Register / login, refresh token in Secure Store |
+| Device-only | Local device account; upgrade from Settings |
 
-| Mode | Description | Storage |
-|---|---|---|
-| **Email/password** | Standard register / login | Refresh token in Secure Store |
-| **Device-only** | Passwordless; data tied to device until upgraded | Device ID + tokens in Secure Store |
-
-Device users can **upgrade** to email/password from Settings (redirects to sign-in with `intent=upgrade`).
-
-### Token lifecycle (client)
-
-1. Login/register returns `accessToken` + `refreshToken`.
-2. Access token is held in memory (`accessTokenHolder`) and attached to GraphQL/REST.
-3. On auth errors, client refreshes via `/auth/refresh` and retries once.
-4. Sign out clears tokens, Apollo cache, and household session.
-
-### Household context
-
-`HouseholdProvider` keeps:
-
-- `activeHouseholdId`, `activeProfileId`
-- Current `profile` (nickname, avatar, list/inventory IDs)
-- `households` list for switching
-
-`useHouseholdResources()` loads shared + per-member resources for Shopping/Fridge UI (avatars, list IDs).
+`HouseholdProvider` holds active household, profile, and household list. `useHouseholdResources()` supplies list/inventory IDs and member avatars for Shopping/Fridge.
 
 ---
 
 ## Design System
 
-Visual specs are defined in the monorepo design file:
+Implemented **in this repo only:**
 
-- **[`roomly-design.md`](../roomly-design.md)** — Figma tokens (colors, components, AI/dev rules)
-
-Implementation in code:
-
-| File | Role |
+| File | Purpose |
 |---|---|
-| `src/shared/theme/colors.ts` | Color tokens (`button`, `field`, `header`, `background`, …) |
-| `src/shared/theme/spacing.ts` | Screen padding, gaps, radii |
-| `src/shared/theme/authScreenStyles.ts` | Onboarding/profile cards, pill inputs, shadows |
-| `src/shared/theme/index.ts` | `stackHeaderOptions` for modal stacks |
+| `src/shared/theme/colors.ts` | Color tokens |
+| `src/shared/theme/spacing.ts` | Padding, gaps, radii |
+| `src/shared/theme/authScreenStyles.ts` | Cards, pill inputs, buttons |
+| `src/shared/theme/index.ts` | Stack header styles |
+| `src/shared/theme/typography.ts` | Type scale |
 
-**Rules for new UI:**
-
-- Use `colors` / `spacing` from theme — no new arbitrary palette entries.
-- Prefer `authScreenStyles.profileCard` for lavender field cards (settings, profile).
-- Header matches Figma: `TabAppHeader` + optional `HouseholdSubheader`.
+Use these files for all new UI. Main chrome: `TabAppHeader`, `RoomlyTabBar`, lavender `colors.field` cards on settings/profile flows.
 
 ---
 
 ## Notifications
 
-| Feature | Expo Go | Development build |
+| Feature | Expo Go | Dev build |
 |---|---|---|
-| Fetch notifications on Home (REST) | Yes | Yes |
-| Mark as read / mark all read | Yes | Yes |
-| System tray banners (`expo-notifications`) | No¹ | Yes, after permission |
+| REST feed on Home | Yes | Yes |
+| Mark read | Yes | Yes |
+| System tray (`expo-notifications`) | Limited¹ | Yes |
 
-¹ Android SDK 53+ limits push in Expo Go; the module is lazy-loaded to avoid crashes.
-
-**Manual test:** Two accounts in one household → trigger a server `@Notifiable` action → open **Home** or pull to refresh. Remote push delivery is not fully wired on the client yet.
+¹ Lazy-loaded in Expo Go to avoid SDK issues.
 
 ---
 
 ## Quality Checks
 
 ```bash
-# Lint
 npm run lint
-
-# TypeScript (no emit)
 npx tsc --noEmit
 ```
-
-Run both before opening a pull request.
 
 ---
 
@@ -373,98 +306,77 @@ Run both before opening a pull request.
 
 ```
 roomly-frontend-mobile/
-├── app/                              # Expo Router — routes only
-│   ├── _layout.tsx                   # Root providers
-│   ├── index.tsx                     # Auth / onboarding redirect
-│   ├── (guest)/                      # welcome, sign-in, sign-up
-│   ├── (onboarding)/                 # household + profile setup
-│   ├── (tabs)/                       # main tabs + _layout (TabAppHeader)
-│   └── (modals)/                     # modal stack flows
+├── app/
+│   ├── _layout.tsx
+│   ├── index.tsx
+│   ├── (guest)/
+│   ├── (onboarding)/
+│   ├── (tabs)/
+│   └── (modals)/
 ├── src/
 │   ├── features/
-│   │   ├── auth/                     # AuthProvider, authApi, token store
-│   │   ├── household/                # session, header, join code, resources
-│   │   ├── profile/                  # profile API, setup, avatar preview
-│   │   ├── product/                  # search, scanner, AddProductForm, OFF
-│   │   ├── shoppingList/             # lists, FAB, hooks, shopping API
-│   │   ├── inventory/                # fridge list, FAB, inventory hooks
-│   │   ├── calendar/                 # events API + UI helpers
-│   │   ├── home/                     # home feed
-│   │   ├── settings/                 # settings tab content
-│   │   └── notifications/            # REST notifications + sync
+│   │   ├── auth/
+│   │   ├── household/
+│   │   ├── profile/
+│   │   ├── product/
+│   │   ├── shoppingList/
+│   │   ├── inventory/
+│   │   ├── calendar/
+│   │   ├── home/
+│   │   ├── settings/
+│   │   └── notifications/
 │   └── shared/
-│       ├── api/                      # apolloClient, http, errors
-│       ├── components/               # Screen, ModalScreen, forms
-│       ├── navigation/               # tab bar, chevrons, layout constants
-│       ├── theme/                    # design tokens
-│       ├── routes.ts                 # typed route paths
-│       └── config.ts                 # env → API_BASE_URL
-├── assets/images/                    # app icon, splash, tab assets
-├── app.json                          # Expo config (camera, notifications plugins)
+│       ├── api/
+│       ├── components/
+│       ├── navigation/
+│       ├── theme/
+│       ├── routes.ts
+│       └── config.ts
+├── assets/images/
+├── app.json
 ├── .env.example
 ├── package.json
-└── tsconfig.json                     # path alias: @/* → project root
+└── tsconfig.json
 ```
 
-### Path alias
-
-Imports use `@/` pointing at the project root (see `tsconfig.json`):
-
-```typescript
-import { routes } from "@/src/shared/routes";
-```
+Import alias: `@/*` → project root (`tsconfig.json`).
 
 ---
 
 ## Troubleshooting
 
-| Problem | Things to check |
+| Problem | Check |
 |---|---|
-| `Missing EXPO_PUBLIC_API_BASE_URL` | Create `.env` from `.env.example`, restart with `npx expo start -c` |
-| Network error on emulator | Use `10.0.2.2` (Android) not `localhost` |
-| Network error on phone | API bound to `0.0.0.0`; use LAN IP; same Wi‑Fi |
-| GraphQL 401 loop | API `JWT_SECRET_KEY` set; clock skew; try sign out/in |
-| Barcode / camera not working | Use `npx expo run:android` / `ios`, not Expo Go |
-| Avatar images blank | API running; `/open/api/avatars/…` reachable; check color query param |
-| Profile update fails (color only) | Known API constraint: `updateProfile` must exclude the current profile when checking avatar/color uniqueness — fix belongs in the API project |
+| Missing `EXPO_PUBLIC_API_BASE_URL` | `.env` from `.env.example`, `npx expo start -c` |
+| Network on Android emulator | `10.0.2.2`, not `localhost` |
+| Network on phone | API on LAN, same Wi‑Fi, correct IP |
+| 401 loop | API up, valid credentials, try sign out/in |
+| Camera / scan | `npx expo run:android` / `ios`, not Expo Go |
+| Blank avatars | API serves `/open/api/avatars/…` |
+| Profile color-only update fails | Server-side `updateProfile` uniqueness check (API fix) |
 
 ---
 
 ## Contributing
 
-1. **New screen** — Add route under `app/`; implement UI/logic in `src/features/<domain>/`.
-2. **New route constant** — Update `src/shared/routes.ts`.
-3. **GraphQL** — Add operations to the feature’s `*Api.ts`; keep resolvers thin in components.
-4. **Styling** — Use `src/shared/theme`; align with `roomly-design.md`.
-5. **No dead code** — Remove unused components when replacing flows (e.g. old section components).
-6. **Checks** — `npm run lint` and `npx tsc --noEmit` before PR.
-7. **Commits** — Small, focused commits with clear messages.
+1. Add screens under `app/`, logic under `src/features/`.
+2. Register paths in `src/shared/routes.ts`.
+3. GraphQL in feature `*Api.ts` files.
+4. Style with `src/shared/theme/` only.
+5. Run `npm run lint` and `npx tsc --noEmit`.
 
-Do **not** change `ROOMLY-API-main/` when working on mobile UI — that tree is a read-only reference. Report API bugs or schema changes to the API maintainer.
-
----
-
-## Related Repositories
-
-| Path | Description |
-|---|---|
-| [`roomly-frontend-mobile/`](.) | **This project** — Expo / React Native app (you develop here) |
-| [`ROOMLY-API-main/`](../ROOMLY-API-main/) | **External API** (Florczak Mikołaj) — reference copy for GraphQL docs only |
-| [`roomly-design.md`](../roomly-design.md) | Design system tokens & rules |
-| [`README.md`](../README.md) | Monorepo overview |
+**API / schema changes** — edit and run tests in **ROOMLY-API-main** (its own repo). The copy next to this folder is for reference; follow [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md) for contribution and deployment there.
 
 ---
 
 ## Acknowledgments
 
-- [Expo](https://expo.dev/) — toolchain and native modules
-- [Expo Router](https://docs.expo.dev/router/introduction/) — navigation
-- [Apollo Client](https://www.apollographql.com/docs/react/) — GraphQL client
-- [Open Food Facts](https://world.openfoodfacts.org/) — product search data
-- [ROOMLY GraphQL API](../ROOMLY-API-main/README.md) — backend by **Florczak Mikołaj** (consumed by this client; not maintained in this repo)
+- [Expo](https://expo.dev/) · [Expo Router](https://docs.expo.dev/router/introduction/) · [Apollo Client](https://www.apollographql.com/docs/react/)
+- [Open Food Facts](https://world.openfoodfacts.org/) — product name search
+- [ROOMLY API](../ROOMLY-API-main/README.md) — backend consumed by this client (documented and maintained separately)
 
 ---
 
 ## License
 
-Private project. Licensing and distribution as agreed by the mobile app maintainers.
+Private project. Licensing as agreed by the maintainers of this repository.
