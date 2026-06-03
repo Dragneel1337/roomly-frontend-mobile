@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "roomly-frontend-mobile",
-    "slug": "roomly-frontend-mobile",
+    "name": "Roomly",
+    "slug": "Roomly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Logo.png",
