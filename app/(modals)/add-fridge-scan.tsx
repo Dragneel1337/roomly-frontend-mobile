@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { TabAppHeader } from "@/src/features/household/TabAppHeader";
-import { BarcodeScannerView } from "@/src/features/shoppingList/BarcodeScannerView";
+import { BarcodeScannerView } from "@/src/features/product/BarcodeScannerView";
 import { Screen } from "@/src/shared/components/Screen";
 import { routes } from "@/src/shared/routes";
 import { spacing } from "@/src/shared/theme/spacing";

@@ -11,30 +11,21 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
-import type { ProfileListResource } from "@/src/features/household/householdResourcesApi";
-import type { PendingProduct } from "@/src/features/shoppingList/pendingProduct";
-import { displayBrand } from "@/src/features/shoppingList/productDisplay";
+import type { PendingProduct } from "@/src/features/product/pendingProduct";
+import { displayBrand } from "@/src/features/product/productDisplay";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { authCardShadow } from "@/src/shared/theme/authScreenStyles";
 import { colors } from "@/src/shared/theme/colors";
 import { spacing } from "@/src/shared/theme/spacing";
 
-export function profileToAvatarSource(member: ProfileListResource): MemberAvatarSource {
-  return {
-    profileId: member.profileId,
-    avatarName: member.avatar.name,
-    colorName: member.avatar.colorName,
-  };
-}
+export type ProductListVisibility = "private" | "shared";
 
-export type ShoppingListVisibility = "private" | "shared";
-
-type AddShoppingProductFormProps = {
+type AddProductFormProps = {
   product: PendingProduct;
   quantity: number;
   onQuantityChange: (value: number) => void;
-  visibility: ShoppingListVisibility;
-  onVisibilityChange: (value: ShoppingListVisibility) => void;
+  visibility: ProductListVisibility;
+  onVisibilityChange: (value: ProductListVisibility) => void;
   notes: string;
   onNotesChange: (value: string) => void;
   onAdd: () => void;
@@ -44,7 +35,7 @@ type AddShoppingProductFormProps = {
   sharedMembers: MemberAvatarSource[];
 };
 
-export function AddShoppingProductForm({
+export function AddProductForm({
   product,
   quantity,
   onQuantityChange,
@@ -57,7 +48,7 @@ export function AddShoppingProductForm({
   loading = false,
   privateMember,
   sharedMembers,
-}: AddShoppingProductFormProps) {
+}: AddProductFormProps) {
   const brandLabel = displayBrand(product.brand) || "—";
   const busy = adding || loading;
 
@@ -171,13 +162,13 @@ function VisibilityOption({
   );
 }
 
-type AddShoppingProductFormLoadingProps = {
+type AddProductFormLoadingProps = {
   message?: string;
 };
 
-export function AddShoppingProductFormLoading({
+export function AddProductFormLoading({
   message = "Loading product…",
-}: AddShoppingProductFormLoadingProps) {
+}: AddProductFormLoadingProps) {
   return (
     <View style={[styles.card, styles.loadingCard]}>
       <ActivityIndicator color={colors.textPrimary} />

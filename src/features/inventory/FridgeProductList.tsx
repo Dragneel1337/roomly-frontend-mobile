@@ -4,7 +4,7 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
-import { profileToAvatarSource } from "@/src/features/shoppingList/AddShoppingProductForm";
+import { profileToAvatarSource } from "@/src/features/household/profileAvatar";
 import type { ProfileListResource } from "@/src/features/household/householdResourcesApi";
 import type { FridgeDisplayItem } from "@/src/features/inventory/useFridgeInventories";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";

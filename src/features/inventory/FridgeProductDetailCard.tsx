@@ -4,7 +4,7 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
-import { displayBrand } from "@/src/features/shoppingList/productDisplay";
+import { displayBrand } from "@/src/features/product/productDisplay";
 import { authCardShadow } from "@/src/shared/theme/authScreenStyles";
 import { colors } from "@/src/shared/theme/colors";
 import { spacing } from "@/src/shared/theme/spacing";

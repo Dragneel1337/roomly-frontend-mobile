@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { moveItemsToInventory } from "@/src/features/inventory/moveToInventory";
-import { formatProductMeta } from "@/src/features/shoppingList/productDisplay";
+import { formatProductMeta } from "@/src/features/product/productDisplay";
 import { QuantityStepper } from "@/src/features/shoppingList/QuantityStepper";
 import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";

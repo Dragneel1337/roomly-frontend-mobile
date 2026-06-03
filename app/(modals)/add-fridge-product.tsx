@@ -5,13 +5,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabAppHeader } from "@/src/features/household/TabAppHeader";
 import { useHouseholdResources } from "@/src/features/household/useHouseholdResources";
 import { useInventory } from "@/src/features/inventory/useInventory";
+import { profileToAvatarSource } from "@/src/features/household/profileAvatar";
 import {
-  AddShoppingProductForm,
-  AddShoppingProductFormLoading,
-  profileToAvatarSource,
-  type ShoppingListVisibility,
-} from "@/src/features/shoppingList/AddShoppingProductForm";
-import type { PendingProduct } from "@/src/features/shoppingList/pendingProduct";
+  AddProductForm,
+  AddProductFormLoading,
+  type ProductListVisibility,
+} from "@/src/features/product/AddProductForm";
+import type { PendingProduct } from "@/src/features/product/pendingProduct";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { Screen } from "@/src/shared/components/Screen";
@@ -49,7 +49,7 @@ export default function AddFridgeProductModal() {
   );
   const [loadingProduct, setLoadingProduct] = useState(!params.name && barcode.length > 0);
   const [quantity, setQuantity] = useState(1);
-  const [visibility, setVisibility] = useState<ShoppingListVisibility>("private");
+  const [visibility, setVisibility] = useState<ProductListVisibility>("private");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -138,11 +138,11 @@ export default function AddFridgeProductModal() {
           {!barcode || !listIdsValid ? (
             <Text style={styles.errorText}>Product or fridge is not available.</Text>
           ) : loadingProduct || !product || !memberAvatars ? (
-            <AddShoppingProductFormLoading
+            <AddProductFormLoading
               message={!memberAvatars ? "Loading household…" : undefined}
             />
           ) : (
-            <AddShoppingProductForm
+            <AddProductForm
               product={product}
               quantity={quantity}
               onQuantityChange={setQuantity}

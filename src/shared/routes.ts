@@ -10,7 +10,6 @@ export const routes = {
     createProfile: "/(onboarding)/create-profile",
   },
   modals: {
-    menu: "/(modals)/menu",
     switchHousehold: "/(modals)/switch-household",
     joinHousehold: "/(modals)/join-household",
     joinHouseholdProfile: "/(modals)/join-household-profile",

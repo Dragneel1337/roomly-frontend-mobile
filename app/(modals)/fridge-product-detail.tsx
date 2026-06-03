@@ -6,7 +6,7 @@ import { TabAppHeader } from "@/src/features/household/TabAppHeader";
 import { useHouseholdResources } from "@/src/features/household/useHouseholdResources";
 import { FridgeProductDetailCard } from "@/src/features/inventory/FridgeProductDetailCard";
 import { useInventory } from "@/src/features/inventory/useInventory";
-import { profileToAvatarSource } from "@/src/features/shoppingList/AddShoppingProductForm";
+import { profileToAvatarSource } from "@/src/features/household/profileAvatar";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { Screen } from "@/src/shared/components/Screen";

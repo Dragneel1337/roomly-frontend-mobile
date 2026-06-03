@@ -7,11 +7,11 @@ import {
   View,
 } from "react-native";
 import { TabAppHeader } from "@/src/features/household/TabAppHeader";
-import type { OffSearchHit } from "@/src/features/shoppingList/openFoodFactsApi";
-import { ProductResultCard } from "@/src/features/shoppingList/ProductResultCard";
-import { ProductSearchBar } from "@/src/features/shoppingList/ProductSearchBar";
-import { displayBrand } from "@/src/features/shoppingList/productDisplay";
-import { useProductSearch } from "@/src/features/shoppingList/useProductSearch";
+import type { OffSearchHit } from "@/src/features/product/openFoodFactsApi";
+import { ProductResultCard } from "@/src/features/product/ProductResultCard";
+import { ProductSearchBar } from "@/src/features/product/ProductSearchBar";
+import { displayBrand } from "@/src/features/product/productDisplay";
+import { useProductSearch } from "@/src/features/product/useProductSearch";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { Screen } from "@/src/shared/components/Screen";
 import { routes } from "@/src/shared/routes";
