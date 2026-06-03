@@ -292,8 +292,13 @@ export function useShoppingList(shoppingListId: number | undefined) {
     async (
       barcode: string,
       count = 1,
+      options?: {
+        targetShoppingListId?: number;
+        notes?: string | null;
+      },
     ): Promise<{ ok: true } | { ok: false; message: string }> => {
-      if (shoppingListId == null) {
+      const listId = options?.targetShoppingListId ?? shoppingListId;
+      if (listId == null) {
         return { ok: false, message: "Shopping list is not available." };
       }
 
@@ -305,6 +310,8 @@ export function useShoppingList(shoppingListId: number | undefined) {
       if (count < 1) {
         return { ok: false, message: "Quantity must be at least 1." };
       }
+
+      const notes = options?.notes?.trim() ? options.notes.trim() : null;
 
       setAdding(true);
       try {
@@ -327,11 +334,15 @@ export function useShoppingList(shoppingListId: number | undefined) {
         await addProduct({
           variables: {
             productId: product.id,
-            shoppingListId,
+            shoppingListId: listId,
             count,
+            notes,
           },
         });
-        await refetch();
+
+        if (listId === shoppingListId) {
+          await refetch();
+        }
         return { ok: true };
       } catch (err) {
         return {

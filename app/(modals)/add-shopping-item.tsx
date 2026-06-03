@@ -1,206 +1,177 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import {
-  AddProductPreview,
-  type PendingProduct,
-} from "@/src/features/shoppingList/AddProductPreview";
+import { TabAppHeader } from "@/src/features/household/TabAppHeader";
 import type { OffSearchHit } from "@/src/features/shoppingList/openFoodFactsApi";
+import { ProductResultCard } from "@/src/features/shoppingList/ProductResultCard";
+import { ProductSearchBar } from "@/src/features/shoppingList/ProductSearchBar";
 import { displayBrand } from "@/src/features/shoppingList/productDisplay";
 import { useProductSearch } from "@/src/features/shoppingList/useProductSearch";
-import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
-import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
-import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { Screen } from "@/src/shared/components/Screen";
+import { routes } from "@/src/shared/routes";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 
 export default function AddShoppingItemModal() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ shoppingListId?: string; title?: string }>();
-  const shoppingListId = params.shoppingListId ? Number(params.shoppingListId) : undefined;
-  const modalTitle = params.title ?? "Add product";
+  const params = useLocalSearchParams<{
+    ownShoppingListId?: string;
+    sharedShoppingListId?: string;
+  }>();
 
-  const { addByBarcode, fetchProductByBarcode, adding } = useShoppingList(shoppingListId);
-  const { query, setQuery, results, showResults, searching, searchError, isBarcodeQuery, trimmedQuery } =
-    useProductSearch();
+  const ownShoppingListId = params.ownShoppingListId;
+  const sharedShoppingListId = params.sharedShoppingListId;
+
+  const {
+    query,
+    setQuery,
+    results,
+    showResults,
+    searching,
+    searchError,
+    isBarcodeQuery,
+    trimmedQuery,
+    submitSearch,
+  } = useProductSearch();
 
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<PendingProduct | null>(null);
-  const [pendingQty, setPendingQty] = useState(1);
-  const [loadingPreview, setLoadingPreview] = useState(false);
 
-  function clearPending() {
-    setPending(null);
-    setPendingQty(1);
-    setError(null);
-  }
-
-  async function resolvePendingFromBarcode(barcode: string): Promise<boolean> {
-    setLoadingPreview(true);
-    setError(null);
-    try {
-      const product = await fetchProductByBarcode(barcode);
-      if (!product) {
-        setError("No product found for this barcode.");
-        return false;
-      }
-      setPending({
+  function goToProductDetail(barcode: string, name?: string, brand?: string) {
+    router.push({
+      pathname: routes.modals.addShoppingProduct,
+      params: {
         barcode,
-        name: product.name,
-        brand: product.brand,
-        quantity: product.quantity,
-      });
-      setPendingQty(1);
-      return true;
-    } catch (err) {
-      setError(getUserFacingErrorMessage(err, "Could not load product."));
-      return false;
-    } finally {
-      setLoadingPreview(false);
-    }
-  }
-
-  async function handleAddPending() {
-    if (!pending) return;
-    setError(null);
-    const result = await addByBarcode(pending.barcode, pendingQty);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    router.back();
+        name: name ?? "",
+        brand: brand ?? "",
+        ownShoppingListId: ownShoppingListId ?? "",
+        sharedShoppingListId: sharedShoppingListId ?? "",
+      },
+    } as Href);
   }
 
   function onSelectHit(hit: OffSearchHit) {
-    setPending({
-      barcode: hit.barcode,
-      name: hit.name,
-      brand: hit.brand || undefined,
-    });
-    setPendingQty(1);
-    setError(null);
+    goToProductDetail(hit.barcode, hit.name, hit.brand || undefined);
   }
 
-  async function onBarcodeQuerySelect() {
-    await resolvePendingFromBarcode(trimmedQuery);
+  function onBarcodeQuerySelect() {
+    goToProductDetail(trimmedQuery);
   }
 
-  if (shoppingListId == null || Number.isNaN(shoppingListId)) {
-    return (
-      <ModalScreen title={modalTitle}>
-        <View style={modalScreenStyles.container}>
-          <Text style={styles.errorText}>Shopping list is not available.</Text>
-        </View>
-      </ModalScreen>
-    );
-  }
+  const listIdsValid = !!ownShoppingListId && !!sharedShoppingListId;
+  const busy = searching;
 
   return (
-    <ModalScreen title={modalTitle}>
-      <View style={modalScreenStyles.container}>
-          {!pending && (
-            <FormTextField
-              value={query}
-              onChangeText={(text) => {
-                setQuery(text);
-                setError(null);
-              }}
-              placeholder="Search by product name…"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!adding && !loadingPreview}
-            />
-          )}
-
-          {!!error && !pending && <Text style={formStyles.submitError}>{error}</Text>}
-          {!!searchError && !pending && <Text style={formStyles.submitError}>{searchError}</Text>}
-
-          {pending && (
+    <>
+      <Stack.Screen options={{ header: () => <TabAppHeader showBack showHouseholdSubheader={false} /> }} />
+      <Screen withStackHeader>
+        <View style={styles.container}>
+          {!listIdsValid ? (
+            <Text style={styles.errorText}>Shopping list is not available.</Text>
+          ) : (
             <>
-              <AddProductPreview
-                product={pending}
-                quantity={pendingQty}
-                onQuantityChange={setPendingQty}
-                onAdd={() => void handleAddPending()}
-                onCancel={clearPending}
-                adding={adding}
-                loading={loadingPreview}
+              <ProductSearchBar
+                value={query}
+                onChangeText={(text) => {
+                  setQuery(text);
+                  setError(null);
+                }}
+                onSearch={submitSearch}
+                editable={!busy}
               />
+
               {!!error && <Text style={formStyles.submitError}>{error}</Text>}
-            </>
-          )}
+              {!!searchError && <Text style={formStyles.submitError}>{searchError}</Text>}
 
-          {!pending && (
-            <ScrollView contentContainerStyle={styles.resultsContent} keyboardShouldPersistTaps="handled">
-              {(searching || loadingPreview) && (
-                <View style={styles.searchingRow}>
-                  <ActivityIndicator size="small" />
-                  <Text style={styles.searchingText}>
-                    {loadingPreview ? "Loading product…" : "Searching…"}
-                  </Text>
-                </View>
-              )}
-
-              {isBarcodeQuery && trimmedQuery.length >= 8 && !loadingPreview && (
-                <Pressable
-                  style={styles.resultItem}
-                  disabled={adding || loadingPreview}
-                  onPress={() => void onBarcodeQuerySelect()}
-                >
-                  <Text style={styles.resultTitle}>Look up barcode {trimmedQuery}</Text>
-                </Pressable>
-              )}
-
-              {!searching &&
-                !isBarcodeQuery &&
-                trimmedQuery.length >= 2 &&
-                !showResults &&
-                !searchError && (
-                  <Text style={styles.emptyResults}>No products found. Try another name.</Text>
+              <ScrollView
+                style={styles.resultsScroll}
+                contentContainerStyle={styles.resultsContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {searching && (
+                  <View style={styles.searchingRow}>
+                    <ActivityIndicator size="small" color={colors.textPrimary} />
+                    <Text style={styles.searchingText}>Searching…</Text>
+                  </View>
                 )}
 
-              {showResults &&
-                results.map((hit) => {
-                  const brand = displayBrand(hit.brand);
-                  return (
-                    <Pressable
-                      key={hit.barcode}
-                      style={styles.resultItem}
-                      disabled={adding || loadingPreview}
-                      onPress={() => onSelectHit(hit)}
-                    >
-                      <Text style={styles.resultTitle}>{hit.name}</Text>
-                      {!!brand && <Text style={styles.resultMeta}>{brand}</Text>}
-                    </Pressable>
-                  );
-                })}
-            </ScrollView>
+                {isBarcodeQuery && trimmedQuery.length >= 8 && !searching && (
+                  <ProductResultCard
+                    title={`Look up barcode ${trimmedQuery}`}
+                    onPress={onBarcodeQuerySelect}
+                    disabled={busy}
+                  />
+                )}
+
+                {!searching &&
+                  !isBarcodeQuery &&
+                  trimmedQuery.length >= 2 &&
+                  !showResults &&
+                  !searchError && (
+                    <Text style={styles.emptyResults}>No products found. Try another name.</Text>
+                  )}
+
+                {showResults &&
+                  results.map((hit) => {
+                    const brand = displayBrand(hit.brand);
+                    return (
+                      <ProductResultCard
+                        key={hit.barcode}
+                        title={hit.name}
+                        subtitle={brand || undefined}
+                        onPress={() => onSelectHit(hit)}
+                        disabled={busy}
+                      />
+                    );
+                  })}
+              </ScrollView>
+            </>
           )}
-      </View>
-    </ModalScreen>
+        </View>
+      </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  errorText: { color: "#dc2626" },
-  resultsContent: { gap: 10, paddingBottom: 24 },
-  searchingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  searchingText: { color: "#6b7280" },
-  resultItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 12,
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.sectionGap,
+    gap: spacing.sectionGap,
   },
-  resultTitle: { fontSize: 16, fontWeight: "600" },
-  resultMeta: { color: "#6b7280", fontSize: 14, marginTop: 4 },
-  emptyResults: { color: "#6b7280", textAlign: "center", paddingTop: 8 },
+  resultsScroll: {
+    flex: 1,
+  },
+  resultsContent: {
+    gap: 12,
+    paddingBottom: 32,
+  },
+  searchingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+  },
+  searchingText: {
+    color: colors.inputText,
+    fontSize: 15,
+  },
+  emptyResults: {
+    color: colors.inputText,
+    textAlign: "center",
+    paddingTop: 12,
+    fontSize: 15,
+  },
+  errorText: {
+    color: colors.error,
+    textAlign: "center",
+  },
 });

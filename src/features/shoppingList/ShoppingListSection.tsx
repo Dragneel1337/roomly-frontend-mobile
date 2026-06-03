@@ -1,4 +1,3 @@
-import { useRouter, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,14 +13,13 @@ import { QuantityStepper } from "@/src/features/shoppingList/QuantityStepper";
 import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { routes } from "@/src/shared/routes";
 
 type ShoppingListSectionProps = {
   title: string;
   shoppingListId: number;
   inventoryId: number;
   canEdit: boolean;
-  listLabel: string;
+  listLabel?: string;
   showTitle?: boolean;
 };
 
@@ -30,10 +28,8 @@ export function ShoppingListSection({
   shoppingListId,
   inventoryId,
   canEdit,
-  listLabel,
   showTitle = true,
 }: ShoppingListSectionProps) {
-  const router = useRouter();
   const {
     displayItems,
     loading,
@@ -75,16 +71,6 @@ export function ShoppingListSection({
       setSelectedIds(new Set(allProductIds));
     }
   }, [allProductIds, allSelected]);
-
-  function openAddModal() {
-    router.push({
-      pathname: routes.modals.addShoppingItem,
-      params: {
-        shoppingListId: String(shoppingListId),
-        title: listLabel,
-      },
-    } as Href);
-  }
 
   async function onRemove(productId: number, count: number) {
     setActionError(null);
@@ -194,14 +180,9 @@ export function ShoppingListSection({
 
   return (
     <View style={styles.section}>
-      {(showTitle || canEdit) && (
+      {showTitle && (
         <View style={styles.sectionHeader}>
-          {showTitle ? <Text style={styles.sectionTitle}>{title}</Text> : <View style={{ flex: 1 }} />}
-          {canEdit && (
-            <Pressable style={styles.addButton} onPress={openAddModal}>
-              <Text style={styles.addButtonText}>+</Text>
-            </Pressable>
-          )}
+          <Text style={styles.sectionTitle}>{title}</Text>
         </View>
       )}
 
@@ -232,7 +213,7 @@ export function ShoppingListSection({
         </Text>
       ) : displayItems.length === 0 ? (
         <Text style={styles.emptyText}>
-          {canEdit ? "Empty — tap + to add products." : "Empty."}
+          {canEdit ? "Empty — use the + button to add products." : "Empty."}
         </Text>
       ) : (
         <View style={styles.list}>
@@ -310,15 +291,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   sectionTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#2563eb",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addButtonText: { color: "#fff", fontSize: 22, fontWeight: "600", lineHeight: 24 },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",

@@ -75,3 +75,52 @@ export const ACTIVE_PROFILE: TypedDocumentNode<
     }
   }
 `;
+
+type UpdateProfileVariables = {
+  profileId: string;
+  nickname?: string;
+  avatarName?: string;
+  avatarColorName?: string;
+};
+
+type UpdateProfileResult = {
+  updateProfile: {
+    id: string;
+    nickname: string;
+    avatar: { name: string; colorName: string };
+  };
+};
+
+export const UPDATE_PROFILE: TypedDocumentNode<
+  UpdateProfileResult,
+  UpdateProfileVariables
+> = gql`
+  mutation UpdateProfile(
+    $profileId: String!
+    $nickname: String
+    $avatarName: String
+    $avatarColorName: String
+  ) {
+    updateProfile(
+      profileId: $profileId
+      nickname: $nickname
+      avatarName: $avatarName
+      avatarColorName: $avatarColorName
+    ) {
+      id
+      nickname
+      avatar {
+        name
+        colorName
+      }
+    }
+  }
+`;
+
+export async function updateProfile(input: UpdateProfileVariables): Promise<void> {
+  const { data } = await apolloClient.mutate({
+    mutation: UPDATE_PROFILE,
+    variables: input,
+  });
+  if (!data?.updateProfile) throw new Error("Could not update profile");
+}

@@ -20,6 +20,16 @@ function normalizeColorKey(colorName: string): string {
   return normalizeCatalogColor({ name: colorName, hex: colorName }).name;
 }
 
+export function buildTakenSetsForHouseholdEdit(
+  members: { profileId: string; avatar: { name: string; colorName: string } }[],
+  activeProfileId: string,
+): TakenSets {
+  const others = members
+    .filter((member) => member.profileId !== activeProfileId)
+    .map((member) => ({ avatar: member.avatar }));
+  return buildTakenSets(others);
+}
+
 export function buildTakenSets(profiles: ProfileAvatarRef[]): TakenSets {
   const takenAvatarNames = new Set<string>();
   const takenColorNames = new Set<string>();
@@ -73,13 +83,29 @@ export function partitionColors(
   return { available, taken: takenList, ordered: [...available, ...takenList] };
 }
 
+export type OwnProfileSelection = {
+  avatarName: string;
+  colorName: string;
+};
+
 export function isSelectionValid(
   avatarName: string | null | undefined,
   color: AvatarColor | null | undefined,
   taken: TakenSets,
+  ownCurrent?: OwnProfileSelection | null,
 ): boolean {
   if (!avatarName || !color) return false;
-  return !isAvatarTaken(avatarName, taken) && !isColorTaken(color, taken);
+
+  const keepingOwnAvatar =
+    ownCurrent != null && avatarName === ownCurrent.avatarName;
+  const keepingOwnColor =
+    ownCurrent != null &&
+    normalizeColorKey(color.name) === normalizeColorKey(ownCurrent.colorName);
+
+  const avatarBlocked = isAvatarTaken(avatarName, taken) && !keepingOwnAvatar;
+  const colorBlocked = isColorTaken(color, taken) && !keepingOwnColor;
+
+  return !avatarBlocked && !colorBlocked;
 }
 
 export function collectProfilesFromHousehold(household: {

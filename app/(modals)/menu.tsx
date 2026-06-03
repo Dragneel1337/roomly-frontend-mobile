@@ -8,10 +8,7 @@ export default function MenuModal() {
     <ModalScreen title="Menu">
       <View style={modalScreenStyles.container}>
         <View style={styles.list}>
-          <Link href={routes.modals.profile} style={styles.item}>
-            Profile
-          </Link>
-          <Link href={routes.modals.settings} style={styles.item}>
+          <Link href={routes.tabs.settings} style={styles.item}>
             Settings
           </Link>
         </View>

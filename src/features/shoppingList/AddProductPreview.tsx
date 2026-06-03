@@ -3,12 +3,9 @@ import { QuantityStepper } from "./QuantityStepper";
 import { formatProductMeta } from "./productDisplay";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 
-export type PendingProduct = {
-  barcode: string;
-  name: string;
-  brand?: string;
-  quantity?: string;
-};
+import type { PendingProduct } from "@/src/features/shoppingList/pendingProduct";
+
+export type { PendingProduct };
 
 type AddProductPreviewProps = {
   product: PendingProduct;

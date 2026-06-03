@@ -122,14 +122,21 @@ export function useInventory(inventoryId: number | undefined) {
     async (
       barcode: string,
       count = 1,
+      options?: {
+        targetInventoryId?: number;
+        notes?: string | null;
+      },
     ): Promise<{ ok: true } | { ok: false; message: string }> => {
-      if (inventoryId == null) {
+      const listId = options?.targetInventoryId ?? inventoryId;
+      if (listId == null) {
         return { ok: false, message: "Fridge is not available." };
       }
 
       const trimmed = barcode.trim();
       if (!trimmed) return { ok: false, message: "Enter a barcode." };
       if (count < 1) return { ok: false, message: "Quantity must be at least 1." };
+
+      const notes = options?.notes?.trim() ? options.notes.trim() : null;
 
       setAdding(true);
       try {
@@ -148,9 +155,17 @@ export function useInventory(inventoryId: number | undefined) {
         if (!product) return { ok: false, message: PRODUCT_NOT_FOUND_MESSAGE };
 
         await addProduct({
-          variables: { productId: product.id, inventoryId, count },
+          variables: {
+            productId: product.id,
+            inventoryId: listId,
+            count,
+            notes,
+          },
         });
-        await refetch();
+
+        if (listId === inventoryId) {
+          await refetch();
+        }
         return { ok: true };
       } catch (err) {
         return {

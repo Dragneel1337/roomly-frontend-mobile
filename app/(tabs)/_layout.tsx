@@ -1,8 +1,8 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { AuthGuard } from "@/src/features/auth/AuthGuard";
 import { HouseholdSessionGate } from "@/src/features/household/HouseholdSessionGate";
 import { TabAppHeader } from "@/src/features/household/TabAppHeader";
+import { RoomlyTabBar } from "@/src/shared/navigation/RoomlyTabBar";
 import { colors } from "@/src/shared/theme/colors";
 
 export default function TabsLayout() {
@@ -10,64 +10,28 @@ export default function TabsLayout() {
     <AuthGuard>
       <HouseholdSessionGate>
         <Tabs
+          tabBar={(props) => <RoomlyTabBar {...props} />}
           screenOptions={{
             header: () => <TabAppHeader />,
+            tabBarShowLabel: false,
             tabBarStyle: {
-              backgroundColor: colors.navBar,
+              backgroundColor: "transparent",
               borderTopWidth: 0,
+              elevation: 0,
+              position: "absolute",
             },
-            tabBarActiveTintColor: colors.navBarIcon,
-            tabBarInactiveTintColor: colors.inputText,
-            tabBarShowLabel: true,
           }}
         >
-          <Tabs.Screen
-            name="home"
-            options={{
-              href: null,
-            }}
-          />
-          <Tabs.Screen
-            name="shopping"
-            options={{
-              title: "Shopping",
-              tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="fridge"
-            options={{
-              title: "Fridge",
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="snow-outline" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="calendar"
-            options={{
-              title: "Calendar",
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="calendar" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="transactions"
-            options={{
-              title: "Transactions",
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="wallet-outline" size={size} color={color} />
-              ),
-            }}
-          />
+          <Tabs.Screen name="home" options={{ href: null }} />
+          <Tabs.Screen name="shopping" options={{ title: "Shopping" }} />
+          <Tabs.Screen name="fridge" options={{ title: "Fridge" }} />
+          <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
+          <Tabs.Screen name="transactions" options={{ title: "Transactions" }} />
           <Tabs.Screen
             name="settings"
             options={{
               title: "Settings",
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="settings-outline" size={size} color={color} />
-              ),
+              header: () => <TabAppHeader showHouseholdSubheader={false} />,
             }}
           />
         </Tabs>

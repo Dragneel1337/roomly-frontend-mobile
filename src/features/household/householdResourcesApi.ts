@@ -6,6 +6,10 @@ export type ProfileListResource = {
   nickname: string;
   shoppingListId: number;
   inventoryId: number;
+  avatar: {
+    name: string;
+    colorName: string;
+  };
 };
 
 export type HouseholdResources = {
@@ -13,6 +17,8 @@ export type HouseholdResources = {
   sharedInventoryId: number;
   own: ProfileListResource;
   others: ProfileListResource[];
+  /** Owner + members in household order (includes the active profile). */
+  allMembers: ProfileListResource[];
 };
 
 type HouseholdResourcesResult = {
@@ -22,12 +28,14 @@ type HouseholdResourcesResult = {
     owner: {
       id: string;
       nickname: string;
+      avatar: { name: string; colorName: string };
       shoppingList: { id: number };
       inventory: { id: number };
     } | null;
     members: {
       id: string;
       nickname: string;
+      avatar: { name: string; colorName: string };
       shoppingList: { id: number };
       inventory: { id: number };
     }[];
@@ -49,6 +57,10 @@ export const HOUSEHOLD_RESOURCES: TypedDocumentNode<
       owner {
         id
         nickname
+        avatar {
+          name
+          colorName
+        }
         shoppingList {
           id
         }
@@ -59,6 +71,10 @@ export const HOUSEHOLD_RESOURCES: TypedDocumentNode<
       members {
         id
         nickname
+        avatar {
+          name
+          colorName
+        }
         shoppingList {
           id
         }
@@ -73,6 +89,7 @@ export const HOUSEHOLD_RESOURCES: TypedDocumentNode<
 function toProfileResource(profile: {
   id: string;
   nickname: string;
+  avatar: { name: string; colorName: string };
   shoppingList: { id: number };
   inventory: { id: number };
 }): ProfileListResource {
@@ -81,6 +98,10 @@ function toProfileResource(profile: {
     nickname: profile.nickname,
     shoppingListId: profile.shoppingList.id,
     inventoryId: profile.inventory.id,
+    avatar: {
+      name: profile.avatar.name,
+      colorName: profile.avatar.colorName,
+    },
   };
 }
 
@@ -112,6 +133,7 @@ export function mapHouseholdResources(
     sharedInventoryId: data.sharedInventory.id,
     own,
     others: profiles.filter((p) => p.profileId !== activeProfileId),
+    allMembers: profiles,
   };
 }
 

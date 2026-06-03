@@ -43,6 +43,7 @@ type HouseholdContextValue = {
   setActiveHousehold: (householdId: string, profileId: string) => Promise<void>;
   switchHousehold: (householdId: string) => Promise<HouseholdSwitchError | null>;
   refreshHouseholds: () => Promise<void>;
+  refreshActiveProfile: () => Promise<void>;
 };
 
 const HouseholdContext = createContext<HouseholdContextValue | undefined>(undefined);
@@ -174,6 +175,12 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const refreshHouseholds = useCallback(async () => {
     applyHouseholdList(await fetchHouseholds());
   }, [applyHouseholdList]);
+
+  const refreshActiveProfile = useCallback(async () => {
+    if (!activeProfileId) return;
+    const loadedProfile = await loadProfile(activeProfileId);
+    setProfile(loadedProfile);
+  }, [activeProfileId]);
 
   const switchHousehold = useCallback(
     async (householdId: string): Promise<HouseholdSwitchError | null> => {
@@ -357,6 +364,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setActiveHousehold,
       switchHousehold,
       refreshHouseholds,
+      refreshActiveProfile,
     }),
     [
       activeHouseholdId,
@@ -369,6 +377,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setActiveHousehold,
       switchHousehold,
       refreshHouseholds,
+      refreshActiveProfile,
     ],
   );
 

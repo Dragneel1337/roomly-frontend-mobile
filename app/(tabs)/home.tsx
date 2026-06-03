@@ -11,10 +11,15 @@ import {
 } from "react-native";
 import { formatParticipantsSummary } from "@/src/features/calendar/EventParticipantsDisplay";
 import { formatEventDateTime } from "@/src/features/calendar/eventDateUtils";
+import { HomeItemRow, HomeSectionCard } from "@/src/features/home/HomeSectionCard";
 import { useHomeFeed } from "@/src/features/home/useHomeFeed";
 import { syncNotificationsFromServer } from "@/src/features/notifications/notificationSync";
 import { Screen } from "@/src/shared/components/Screen";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 import { routes } from "@/src/shared/routes";
+
+const PREVIEW_COUNT = 2;
 
 function formatNotificationTime(iso: string): string {
   const date = new Date(iso);
@@ -36,9 +41,9 @@ export default function HomeTab() {
     error,
     refetch,
     markRead,
-    markAllRead,
   } = useHomeFeed();
   const [refreshing, setRefreshing] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -56,55 +61,75 @@ export default function HomeTab() {
     }
   }
 
+  const visibleNotifications = showAllNotifications
+    ? notifications
+    : notifications.slice(0, PREVIEW_COUNT);
+  const visibleEvents = events.slice(0, PREVIEW_COUNT);
+
   return (
     <Screen withStackHeader>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
         {loading && !refreshing ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color={colors.textPrimary} />
           </View>
         ) : null}
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent changes</Text>
-            {notifications.length > 0 ? (
-              <Pressable onPress={() => void markAllRead()}>
-                <Text style={styles.link}>Mark all as read</Text>
-              </Pressable>
-            ) : null}
-          </View>
+        <HomeSectionCard
+          title="Latest notifications"
+          footerLabel={
+            notifications.length > PREVIEW_COUNT && !showAllNotifications
+              ? "Show more"
+              : undefined
+          }
+          onFooterPress={
+            notifications.length > PREVIEW_COUNT && !showAllNotifications
+              ? () => setShowAllNotifications(true)
+              : undefined
+          }
+        >
           {notifications.length === 0 && !loading ? (
-            <Text style={styles.emptyText}>No recent changes</Text>
+            <HomeItemRow>
+              <Text style={styles.emptyText}>No recent changes</Text>
+            </HomeItemRow>
           ) : (
-            notifications.map((n) => (
-              <Pressable
-                key={n.id}
-                style={styles.card}
-                onPress={() => void markRead(n.id)}
-              >
-                <Text style={styles.cardTitle}>{n.title}</Text>
-                <Text style={styles.cardBody}>{n.message}</Text>
-                <Text style={styles.cardMeta}>{formatNotificationTime(n.timestamp)}</Text>
+            visibleNotifications.map((n) => (
+              <Pressable key={n.id} onPress={() => void markRead(n.id)}>
+                <HomeItemRow>
+                  <Text style={styles.itemTitle}>{n.title}</Text>
+                  <Text style={styles.itemBody} numberOfLines={2}>
+                    {n.message}
+                  </Text>
+                  <Text style={styles.itemMeta}>{formatNotificationTime(n.timestamp)}</Text>
+                </HomeItemRow>
               </Pressable>
             ))
           )}
-        </View>
+        </HomeSectionCard>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upcoming events</Text>
+        <HomeSectionCard
+          title="Upcoming activities"
+          footerLabel={events.length > PREVIEW_COUNT ? "Show more" : undefined}
+          onFooterPress={
+            events.length > PREVIEW_COUNT
+              ? () => router.push(routes.tabs.calendar)
+              : undefined
+          }
+        >
           {events.length === 0 && !loading ? (
-            <Text style={styles.emptyText}>No upcoming events</Text>
+            <HomeItemRow>
+              <Text style={styles.emptyText}>No upcoming events</Text>
+            </HomeItemRow>
           ) : (
-            events.map((e) => (
+            visibleEvents.map((e) => (
               <Pressable
                 key={e.id}
-                style={styles.card}
                 onPress={() =>
                   router.push({
                     pathname: routes.modals.eventDetail,
@@ -112,16 +137,22 @@ export default function HomeTab() {
                   })
                 }
               >
-                <Text style={styles.cardTitle}>{e.name}</Text>
-                {e.description ? <Text style={styles.cardBody}>{e.description}</Text> : null}
-                <Text style={styles.cardMeta}>{formatEventDateTime(e.startTime)}</Text>
-                <Text style={styles.cardMetaSecondary} numberOfLines={2}>
-                  {formatParticipantsSummary(e)}
-                </Text>
+                <HomeItemRow>
+                  <Text style={styles.itemTitle}>{e.name}</Text>
+                  {e.description ? (
+                    <Text style={styles.itemBody} numberOfLines={2}>
+                      {e.description}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.itemMeta}>{formatEventDateTime(e.startTime)}</Text>
+                  <Text style={styles.itemMetaSecondary} numberOfLines={1}>
+                    {formatParticipantsSummary(e)}
+                  </Text>
+                </HomeItemRow>
               </Pressable>
             ))
           )}
-        </View>
+        </HomeSectionCard>
       </ScrollView>
     </Screen>
   );
@@ -129,58 +160,41 @@ export default function HomeTab() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 24,
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: 8,
+    gap: 20,
     paddingBottom: 32,
-  },
-  section: {
-    gap: 12,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  link: {
-    color: "#2563eb",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  emptyText: {
-    color: "#6b7280",
-  },
-  card: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    gap: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cardBody: {
-    color: "#374151",
-  },
-  cardMeta: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginTop: 4,
-  },
-  cardMetaSecondary: {
-    fontSize: 12,
-    color: "#9ca3af",
   },
   centered: {
     paddingVertical: 24,
     alignItems: "center",
   },
   errorText: {
-    color: "#b91c1c",
+    color: colors.error,
+    textAlign: "center",
+  },
+  emptyText: {
+    color: colors.inputText,
+    textAlign: "center",
+    fontSize: 14,
+  },
+  itemTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  itemBody: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  itemMeta: {
+    fontSize: 12,
+    color: colors.inputText,
+    marginTop: 4,
+  },
+  itemMetaSecondary: {
+    fontSize: 12,
+    color: colors.inputText,
   },
 });

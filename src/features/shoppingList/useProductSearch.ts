@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isAbortError } from "@/src/shared/api/isAbortError";
 import {
   looksLikeBarcode,
@@ -15,6 +15,7 @@ export function useProductSearch() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const currentQueryRef = useRef("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const trimmedQuery = query.trim();
   const isBarcodeQuery = looksLikeBarcode(trimmedQuery);
@@ -22,10 +23,53 @@ export function useProductSearch() {
   const showResults =
     !searching && !resultsAreStale && resultsQuery === trimmedQuery && results.length > 0;
 
+  const runSearch = useCallback(async (requestQuery: string) => {
+    if (requestQuery.length < 2 || looksLikeBarcode(requestQuery)) {
+      return;
+    }
+
+    abortRef.current?.abort();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+
+    currentQueryRef.current = requestQuery;
+    setResults([]);
+    setResultsQuery(null);
+    setSearching(true);
+    setSearchError(null);
+
+    try {
+      const hits = await searchProductsByName(requestQuery, abortController.signal);
+      if (abortController.signal.aborted) return;
+      if (currentQueryRef.current !== requestQuery) return;
+
+      setResults(hits);
+      setResultsQuery(requestQuery);
+      setSearchError(null);
+    } catch (err: unknown) {
+      if (abortController.signal.aborted) return;
+      if (currentQueryRef.current !== requestQuery) return;
+      if (isAbortError(err)) return;
+
+      setResults([]);
+      setResultsQuery(null);
+      setSearchError("Search failed");
+    } finally {
+      if (abortController.signal.aborted) return;
+      if (currentQueryRef.current !== requestQuery) return;
+      setSearching(false);
+    }
+  }, []);
+
+  const submitSearch = useCallback(() => {
+    void runSearch(trimmedQuery);
+  }, [runSearch, trimmedQuery]);
+
   useEffect(() => {
     currentQueryRef.current = trimmedQuery;
 
     if (trimmedQuery.length < 2 || isBarcodeQuery) {
+      abortRef.current?.abort();
       setResults([]);
       setResultsQuery(null);
       setSearchError(null);
@@ -33,45 +77,15 @@ export function useProductSearch() {
       return;
     }
 
-    setResults([]);
-    setResultsQuery(null);
-    setSearching(true);
-    setSearchError(null);
-
-    const abortController = new AbortController();
-    const requestQuery = trimmedQuery;
-
     const handle = setTimeout(() => {
-      void searchProductsByName(requestQuery, abortController.signal)
-        .then((hits) => {
-          if (abortController.signal.aborted) return;
-          if (currentQueryRef.current !== requestQuery) return;
-
-          setResults(hits);
-          setResultsQuery(requestQuery);
-          setSearchError(null);
-        })
-        .catch((err: unknown) => {
-          if (abortController.signal.aborted) return;
-          if (currentQueryRef.current !== requestQuery) return;
-          if (isAbortError(err)) return;
-
-          setResults([]);
-          setResultsQuery(null);
-          setSearchError("Search failed");
-        })
-        .finally(() => {
-          if (abortController.signal.aborted) return;
-          if (currentQueryRef.current !== requestQuery) return;
-          setSearching(false);
-        });
+      void runSearch(trimmedQuery);
     }, DEBOUNCE_MS);
 
     return () => {
       clearTimeout(handle);
-      abortController.abort();
+      abortRef.current?.abort();
     };
-  }, [trimmedQuery, isBarcodeQuery]);
+  }, [trimmedQuery, isBarcodeQuery, runSearch]);
 
   return {
     query,
@@ -84,5 +98,6 @@ export function useProductSearch() {
     searchError,
     isBarcodeQuery,
     trimmedQuery,
+    submitSearch,
   };
 }

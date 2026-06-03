@@ -1,8 +1,15 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import type { AvatarColor } from "@/src/features/household/householdApi";
 import { AvatarImagePreview } from "@/src/features/profile/AvatarImagePreview";
-import { resolveHexForDisplay } from "@/src/features/profile/avatarColorCatalog";
-import { isAvatarTaken, isColorTaken } from "@/src/features/profile/profileAvailability";
+import {
+  normalizeCatalogColor,
+  resolveHexForDisplay,
+} from "@/src/features/profile/avatarColorCatalog";
+import {
+  isAvatarTaken,
+  isColorTaken,
+  type OwnProfileSelection,
+} from "@/src/features/profile/profileAvailability";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
 import { formStyles } from "@/src/shared/components/form/formStyles";
@@ -13,11 +20,12 @@ import type { useProfileSetup } from "./useProfileSetup";
 
 type ProfileSetupFieldsProps = {
   setup: ReturnType<typeof useProfileSetup>;
+  variant?: "create" | "edit";
 };
 
 const SWATCH_SIZE = 52;
 
-export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
+export function ProfileSetupFields({ setup, variant = "create" }: ProfileSetupFieldsProps) {
   const {
     nickname,
     setNickname,
@@ -33,10 +41,13 @@ export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
     cycleAvatar,
     selectColor,
     selectionTakenError,
+    ownCurrent,
   } = setup;
 
   const avatarTaken =
-    !!selectedAvatarName && isAvatarTaken(selectedAvatarName, taken);
+    !!selectedAvatarName &&
+    isAvatarTaken(selectedAvatarName, taken) &&
+    !(ownCurrent && selectedAvatarName === ownCurrent.avatarName);
   const canCycleAvatars = avatarOptions.available.length > 1;
 
   if (optionsLoading) {
@@ -62,8 +73,12 @@ export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
 
   return (
     <>
-      <Text style={authScreenStyles.cardTitle}>Choose your avatar</Text>
-      <Text style={authScreenStyles.cardSubtitle}>(you can change it later)</Text>
+      <Text style={authScreenStyles.cardTitle}>
+        {variant === "edit" ? "Appearance" : "Choose your avatar"}
+      </Text>
+      {variant === "create" ? (
+        <Text style={authScreenStyles.cardSubtitle}>(you can change it later)</Text>
+      ) : null}
 
       <View style={styles.avatarRow}>
         {canCycleAvatars ? (
@@ -114,6 +129,7 @@ export function ProfileSetupFields({ setup }: ProfileSetupFieldsProps) {
         colors={colorOptions.ordered}
         selectedColor={selectedColor}
         taken={taken}
+        ownCurrent={ownCurrent}
         onSelect={selectColor}
       />
 
@@ -128,14 +144,33 @@ type ColorSwatchGridProps = {
   colors: AvatarColor[];
   selectedColor: AvatarColor | null;
   taken: { takenAvatarNames: Set<string>; takenColorNames: Set<string> };
+  ownCurrent?: OwnProfileSelection | null;
   onSelect: (color: AvatarColor) => void;
 };
 
-function ColorSwatchGrid({ colors: colorList, selectedColor, taken, onSelect }: ColorSwatchGridProps) {
+function isColorBlocked(
+  color: AvatarColor,
+  taken: ColorSwatchGridProps["taken"],
+  ownCurrent?: OwnProfileSelection | null,
+): boolean {
+  const keepingOwn =
+    ownCurrent != null &&
+    normalizeCatalogColor(color).name ===
+      normalizeCatalogColor({ name: ownCurrent.colorName, hex: ownCurrent.colorName }).name;
+  return isColorTaken(color, taken) && !keepingOwn;
+}
+
+function ColorSwatchGrid({
+  colors: colorList,
+  selectedColor,
+  taken,
+  ownCurrent,
+  onSelect,
+}: ColorSwatchGridProps) {
   return (
     <View style={styles.colorGrid}>
       {colorList.map((color) => {
-        const takenColor = isColorTaken(color, taken);
+        const takenColor = isColorBlocked(color, taken, ownCurrent);
         const selected = selectedColor?.name === color.name;
 
         return (
