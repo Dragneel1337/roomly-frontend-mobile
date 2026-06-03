@@ -77,12 +77,23 @@ export const avatarSizes = {
   header: HEADER_TITLE_LINE_HEIGHT,
   chip: 32,
   /** Fridge list “Owners” column and product detail owner stack. */
-  listOwner: 40,
+  listOwner: 80,
   /** Private / shared picker when adding to shopping or fridge. */
-  visibilityPicker: 44,
+  visibilityPicker: 88,
 } as const;
 
 /** Avatar stack overlap for a given layout slot size. */
 export function getAvatarStackOverlap(size: number): number {
   return Math.round(size * 0.3);
+}
+
+/** Horizontal space for N overlapping avatars (layout column / trailing slot). */
+export function getAvatarStackRowWidth(
+  memberCount: number,
+  size: number,
+  overlap: number = getAvatarStackOverlap(size),
+): number {
+  if (memberCount <= 0) return 0;
+  if (memberCount === 1) return size;
+  return size + (memberCount - 1) * (size - overlap);
 }

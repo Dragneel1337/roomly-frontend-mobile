@@ -13,6 +13,13 @@ import { routes } from "@/src/shared/routes";
 import { authPillShadow } from "@/src/shared/theme/authScreenStyles";
 import { colors } from "@/src/shared/theme/colors";
 
+const QUANTITY_COL_WIDTH = 76;
+
+const rowHorizontalPadding = {
+  paddingLeft: 16,
+  paddingRight: 4,
+} as const;
+
 type FridgeProductListProps = {
   items: FridgeDisplayItem[];
   loading?: boolean;
@@ -31,6 +38,8 @@ export function FridgeProductList({
   const router = useRouter();
   const privateAvatar = profileToAvatarSource(ownMember);
   const sharedAvatars: MemberAvatarSource[] = allMembers.map(profileToAvatarSource);
+  const ownerSize = avatarSizes.listOwner;
+  const ownerOverlap = getAvatarStackOverlap(ownerSize);
 
   function openDetail(row: FridgeDisplayItem) {
     router.push({
@@ -66,10 +75,12 @@ export function FridgeProductList({
           <Text style={styles.columnTitle}>Products</Text>
         </View>
         <View style={styles.quantityCol}>
-          <Text style={[styles.columnTitle, styles.columnTitleCenter]}>Quantity</Text>
+          <Text style={[styles.quantityCellText, styles.columnTitleQuantity]} numberOfLines={1}>
+            Quantity
+          </Text>
         </View>
         <View style={styles.ownersCol}>
-          <Text style={[styles.columnTitle, styles.columnTitleRight]}>Owners</Text>
+          <Text style={styles.columnTitleOwners}>Owners</Text>
         </View>
       </View>
       <View style={styles.list}>
@@ -90,13 +101,13 @@ export function FridgeProductList({
               )}
             </View>
             <View style={styles.quantityCol}>
-              <Text style={styles.productQty}>{row.item.count}</Text>
+              <Text style={[styles.quantityCellText, styles.productQty]}>{row.item.count}</Text>
             </View>
             <View style={styles.ownersCol}>
               <MemberAvatarStack
                 members={row.isShared ? sharedAvatars : [privateAvatar]}
-                size={avatarSizes.listOwner}
-                overlap={getAvatarStackOverlap(avatarSizes.listOwner)}
+                size={ownerSize}
+                overlap={ownerOverlap}
               />
             </View>
           </Pressable>
@@ -106,52 +117,70 @@ export function FridgeProductList({
   );
 }
 
+const rowGrid = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+};
+
 const styles = StyleSheet.create({
   wrap: { gap: 10 },
   columnHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 4,
+    ...rowGrid,
+    ...rowHorizontalPadding,
+    paddingBottom: 2,
   },
   columnTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: colors.textPrimary,
   },
+  quantityCellText: {
+    width: QUANTITY_COL_WIDTH,
+    textAlign: "center",
+    includeFontPadding: false,
+  },
+  columnTitleQuantity: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  columnTitleOwners: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    textAlign: "right",
+  },
   productsCol: {
     flex: 1,
     minWidth: 0,
     justifyContent: "center",
+    alignItems: "flex-start",
+    paddingRight: 4,
   },
   quantityCol: {
-    flex: 1,
-    minWidth: 72,
+    width: QUANTITY_COL_WIDTH,
+    flexShrink: 0,
+    flexGrow: 0,
     alignItems: "center",
     justifyContent: "center",
   },
   ownersCol: {
-    minWidth: 108,
+    flex: 1,
+    minWidth: 0,
     alignItems: "flex-end",
     justifyContent: "center",
-  },
-  columnTitleCenter: {
-    alignSelf: "stretch",
-    textAlign: "center",
-  },
-  columnTitleRight: {
-    textAlign: "right",
+    overflow: "visible",
+    paddingLeft: 4,
+    marginRight: -2,
   },
   list: { gap: 10 },
   row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    ...rowGrid,
+    ...rowHorizontalPadding,
     backgroundColor: colors.white,
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    minHeight: 52,
+    paddingVertical: 7,
+    minHeight: avatarSizes.listOwner + 12,
   },
   productName: {
     fontSize: 16,
@@ -159,8 +188,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   productQty: {
-    alignSelf: "stretch",
-    textAlign: "center",
     fontSize: 15,
     fontWeight: "700",
     color: colors.textPrimary,

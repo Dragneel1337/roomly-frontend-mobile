@@ -4,7 +4,11 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
-import { avatarSizes, getAvatarStackOverlap } from "@/src/features/profile/avatarDisplay";
+import {
+  avatarSizes,
+  getAvatarStackOverlap,
+  getAvatarStackRowWidth,
+} from "@/src/features/profile/avatarDisplay";
 import { displayBrand } from "@/src/features/product/productDisplay";
 import { authCardShadow } from "@/src/shared/theme/authScreenStyles";
 import { colors } from "@/src/shared/theme/colors";
@@ -29,6 +33,9 @@ export function FridgeProductDetailCard({
 }: FridgeProductDetailCardProps) {
   const brandLabel = displayBrand(item.product.brand) || "—";
   const notesText = item.notes?.trim() ?? "";
+  const ownerSize = avatarSizes.listOwner;
+  const ownerOverlap = getAvatarStackOverlap(ownerSize);
+  const ownerSlotWidth = getAvatarStackRowWidth(owners.length, ownerSize, ownerOverlap);
 
   return (
     <View style={styles.card}>
@@ -63,12 +70,8 @@ export function FridgeProductDetailCard({
             </View>
           </View>
         </View>
-        <View style={styles.ownerSlot}>
-          <MemberAvatarStack
-            members={owners}
-            size={avatarSizes.listOwner}
-            overlap={getAvatarStackOverlap(avatarSizes.listOwner)}
-          />
+        <View style={[styles.ownerSlot, { width: Math.max(ownerSlotWidth, ownerSize) }]}>
+          <MemberAvatarStack members={owners} size={ownerSize} overlap={ownerOverlap} />
         </View>
       </View>
 
@@ -131,8 +134,10 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   ownerSlot: {
+    flexShrink: 0,
+    alignItems: "flex-end",
     justifyContent: "flex-start",
-    paddingTop: 4,
+    overflow: "visible",
   },
   quantityRow: {
     flexDirection: "row",

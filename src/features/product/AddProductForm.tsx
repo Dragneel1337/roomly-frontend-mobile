@@ -11,7 +11,11 @@ import {
   MemberAvatarStack,
   type MemberAvatarSource,
 } from "@/src/features/household/MemberAvatarStack";
-import { avatarSizes, getAvatarStackOverlap } from "@/src/features/profile/avatarDisplay";
+import {
+  avatarSizes,
+  getAvatarStackOverlap,
+  getAvatarStackRowWidth,
+} from "@/src/features/profile/avatarDisplay";
 import type { PendingProduct } from "@/src/features/product/pendingProduct";
 import { displayBrand } from "@/src/features/product/productDisplay";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
@@ -52,6 +56,12 @@ export function AddProductForm({
 }: AddProductFormProps) {
   const brandLabel = displayBrand(product.brand) || "—";
   const busy = adding || loading;
+  const pickerSize = avatarSizes.visibilityPicker;
+  const pickerOverlap = getAvatarStackOverlap(pickerSize);
+  const trailingSlotWidth = Math.max(
+    getAvatarStackRowWidth(1, pickerSize, pickerOverlap),
+    getAvatarStackRowWidth(sharedMembers.length, pickerSize, pickerOverlap),
+  );
 
   return (
     <View style={styles.card}>
@@ -95,11 +105,13 @@ export function AddProductForm({
           disabled={busy}
           onPress={() => onVisibilityChange("private")}
           trailing={
-            <MemberAvatarStack
-              members={[privateMember]}
-              size={avatarSizes.visibilityPicker}
-              overlap={getAvatarStackOverlap(avatarSizes.visibilityPicker)}
-            />
+            <View style={[styles.avatarTrailing, { width: trailingSlotWidth }]}>
+              <MemberAvatarStack
+                members={[privateMember]}
+                size={pickerSize}
+                overlap={pickerOverlap}
+              />
+            </View>
           }
         />
         <VisibilityOption
@@ -108,11 +120,13 @@ export function AddProductForm({
           disabled={busy}
           onPress={() => onVisibilityChange("shared")}
           trailing={
-            <MemberAvatarStack
-              members={sharedMembers}
-              size={avatarSizes.visibilityPicker}
-              overlap={getAvatarStackOverlap(avatarSizes.visibilityPicker)}
-            />
+            <View style={[styles.avatarTrailing, { width: trailingSlotWidth }]}>
+              <MemberAvatarStack
+                members={sharedMembers}
+                size={pickerSize}
+                overlap={pickerOverlap}
+              />
+            </View>
           }
         />
       </View>
@@ -270,18 +284,28 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   visibilityBlock: {
-    gap: 12,
+    gap: 14,
   },
   visibilityRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    minHeight: avatarSizes.visibilityPicker + 8,
+    gap: 12,
   },
   visibilityLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    flex: 1,
     flexShrink: 1,
+    minWidth: 0,
+  },
+  avatarTrailing: {
+    flexShrink: 0,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    overflow: "visible",
   },
   radioOuter: {
     width: 20,
