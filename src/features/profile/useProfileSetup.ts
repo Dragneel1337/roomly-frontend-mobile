@@ -1,4 +1,5 @@
 import { useQuery } from "@apollo/client/react";
+import { Image } from "expo-image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AVAILABLE_AVATARS_AND_COLORS,
@@ -18,6 +19,7 @@ import {
   cycleIndex,
   partitionColors,
 } from "@/src/features/profile/profileAvailability";
+import { buildAvatarImageUrl } from "@/src/features/profile/avatarImageUrl";
 import { validateNickname } from "@/src/features/profile/validation";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
@@ -80,6 +82,13 @@ export function useProfileSetup(options?: UseProfileSetupOptions) {
 
   const avatarOptions = useMemo(() => partitionAvatars(avatars, taken), [avatars, taken]);
   const colorOptions = useMemo(() => partitionColors(colors, taken), [colors, taken]);
+
+  useEffect(() => {
+    if (!avatars.length || !selectedColor) return;
+    for (const name of avatars) {
+      void Image.prefetch(buildAvatarImageUrl(name, selectedColor));
+    }
+  }, [avatars, selectedColor]);
 
   const hasTakenOptions =
     avatarOptions.taken.length > 0 || colorOptions.taken.length > 0;

@@ -200,8 +200,9 @@ export const HOUSEHOLD_BY_JOIN_CODE: TypedDocumentNode<
 
 export type HouseholdTakenAvatarsResult = {
   householdByJoinCode: {
-    owner: { avatar: { name: string; colorName: string } } | null;
-    members: { avatar: { name: string; colorName: string } }[];
+    id: string;
+    owner: { id: string; avatar: { name: string; colorName: string } } | null;
+    members: { id: string; avatar: { name: string; colorName: string } }[];
   };
 };
 
@@ -211,13 +212,16 @@ export const HOUSEHOLD_TAKEN_AVATARS: TypedDocumentNode<
 > = gql`
   query HouseholdTakenAvatars($joinCode: String!) {
     householdByJoinCode(joinCode: $joinCode) {
+      id
       owner {
+        id
         avatar {
           name
           colorName
         }
       }
       members {
+        id
         avatar {
           name
           colorName

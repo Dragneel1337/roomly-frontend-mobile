@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: colors.inputText,
+    color: colors.textSecondary,
     marginTop: 4,
   },
 });

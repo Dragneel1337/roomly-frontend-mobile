@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { EventProfile, HouseholdEvent } from "@/src/features/calendar/eventsApi";
+import { colors } from "@/src/shared/theme/colors";
 
 type EventParticipantsDisplayProps = {
   creator?: EventProfile | null;
@@ -60,10 +61,15 @@ export function EventParticipantsDisplay({
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 16, gap: 10 },
-  sectionTitle: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  sectionTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
   row: { gap: 4 },
-  role: { fontSize: 12, fontWeight: "600", color: "#6b7280", textTransform: "uppercase" },
+  role: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+  },
   name: { fontSize: 16, color: "#111827" },
-  muted: { fontSize: 15, color: "#6b7280" },
+  muted: { fontSize: 15, color: colors.textSecondary },
   attendeeList: { gap: 4 },
 });

@@ -1,5 +1,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import type { HouseholdMemberOption } from "@/src/features/calendar/useHouseholdMemberOptions";
+import { authScreenStyles, authPillShadow } from "@/src/shared/theme/authScreenStyles";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 
 type EventAttendeePickerProps = {
   members: HouseholdMemberOption[];
@@ -20,17 +23,17 @@ export function EventAttendeePicker({
 }: EventAttendeePickerProps) {
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Participants</Text>
+      <Text style={authScreenStyles.fieldLabel}>Participants</Text>
       {organizerNickname ? (
-        <Text style={styles.hint}>
+        <Text style={authScreenStyles.hintText}>
           You ({organizerNickname}) are the organizer. Invited members receive a notification.
         </Text>
       ) : (
-        <Text style={styles.hint}>Invited members receive a notification.</Text>
+        <Text style={authScreenStyles.hintText}>Invited members receive a notification.</Text>
       )}
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} />
+        <ActivityIndicator style={styles.loader} color={colors.textPrimary} />
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : members.length === 0 ? (
@@ -42,12 +45,14 @@ export function EventAttendeePicker({
             return (
               <Pressable
                 key={member.profileId}
-                style={styles.row}
+                style={[styles.row, selected && styles.rowSelected]}
                 onPress={() => onToggle(member.profileId)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}
               >
-                <Text style={styles.checkbox}>{selected ? "☑" : "☐"}</Text>
+                <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                  {selected ? <Text style={styles.checkmark}>✓</Text> : null}
+                </View>
                 <Text style={styles.name}>{member.nickname}</Text>
               </Pressable>
             );
@@ -59,23 +64,60 @@ export function EventAttendeePicker({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 12, gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#374151" },
-  hint: { fontSize: 13, color: "#6b7280", lineHeight: 18 },
-  loader: { marginVertical: 8 },
-  errorText: { color: "#b91c1c", fontSize: 13 },
-  emptyText: { color: "#6b7280", fontSize: 13 },
-  list: { gap: 4, marginTop: 4 },
+  wrap: {
+    marginTop: 8,
+    gap: 8,
+  },
+  loader: {
+    marginVertical: 8,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: 13,
+    textAlign: "center",
+  },
+  emptyText: {
+    ...authScreenStyles.hintText,
+  },
+  list: {
+    gap: 8,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
+    borderRadius: spacing.inputRadius,
+    ...authPillShadow,
   },
-  checkbox: { fontSize: 18, color: "#2563eb" },
-  name: { fontSize: 16, color: "#111827" },
+  rowSelected: {
+    backgroundColor: colors.inputBackground,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.textPrimary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxSelected: {
+    backgroundColor: colors.button,
+    borderColor: colors.button,
+  },
+  checkmark: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  name: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    flex: 1,
+  },
 });

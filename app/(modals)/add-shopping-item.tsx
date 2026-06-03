@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchingText: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     fontSize: 15,
   },
   emptyResults: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     textAlign: "center",
     paddingTop: 12,
     fontSize: 15,

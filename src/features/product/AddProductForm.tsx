@@ -111,7 +111,7 @@ export function AddProductForm({
           value={notes}
           onChangeText={onNotesChange}
           placeholder="Add a note…"
-          placeholderTextColor={colors.inputText}
+          placeholderTextColor={colors.textSecondary}
           multiline
           textAlignVertical="top"
           editable={!busy}

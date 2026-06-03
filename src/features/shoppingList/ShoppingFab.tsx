@@ -6,15 +6,19 @@ export const SHOPPING_FAB_SIZE = 56;
 
 type ShoppingFabProps = {
   onPress: () => void;
+  accessibilityLabel?: string;
 };
 
-export function ShoppingFab({ onPress }: ShoppingFabProps) {
+export function ShoppingFab({
+  onPress,
+  accessibilityLabel = "Add product",
+}: ShoppingFabProps) {
   return (
     <Pressable
       style={[styles.fab, fabShadow]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Add product"
+      accessibilityLabel={accessibilityLabel}
     >
       <Ionicons name="add" size={32} color={colors.onHeader} />
     </Pressable>

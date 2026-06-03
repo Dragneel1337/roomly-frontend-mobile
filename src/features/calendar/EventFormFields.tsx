@@ -2,9 +2,13 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useEffect, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { formatEventDateTimeFromDate } from "@/src/features/calendar/eventDateUtils";
 import { FormTextField } from "@/src/shared/components/form/FormTextField";
+import { formStyles } from "@/src/shared/components/form/formStyles";
+import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
+import { colors } from "@/src/shared/theme/colors";
+import { spacing } from "@/src/shared/theme/spacing";
 
 type PickerTarget = "start" | "end" | null;
 type AndroidPickerStep = "date" | "time";
@@ -110,8 +114,9 @@ export function EventFormFields({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Name</Text>
+      <Text style={authScreenStyles.fieldLabel}>Name</Text>
       <FormTextField
+        variant="pill"
         value={name}
         onChangeText={onNameChange}
         placeholder="Event name"
@@ -119,45 +124,74 @@ export function EventFormFields({
         showError={!!nameError}
       />
 
-      <Text style={styles.label}>Description</Text>
-      <FormTextField
-        value={description}
-        onChangeText={onDescriptionChange}
-        placeholder="Optional"
-        multiline
-      />
+      <Text style={authScreenStyles.fieldLabel}>Description</Text>
+      <View style={formStyles.pillFieldContainer}>
+        <TextInput
+          value={description}
+          onChangeText={onDescriptionChange}
+          placeholder="Optional"
+          placeholderTextColor={colors.textSecondary}
+          multiline
+          style={styles.descriptionInput}
+        />
+      </View>
 
-      <Text style={styles.label}>Starts</Text>
-      <Pressable style={styles.dateButton} onPress={() => onPickerTargetChange("start")}>
-        <Text>{formatEventDateTimeFromDate(startTime)}</Text>
+      <Text style={authScreenStyles.fieldLabel}>Starts</Text>
+      <Pressable
+        style={styles.dateButton}
+        onPress={() => onPickerTargetChange("start")}
+        accessibilityRole="button"
+      >
+        <Text style={styles.dateButtonText}>{formatEventDateTimeFromDate(startTime)}</Text>
       </Pressable>
 
-      <Text style={styles.label}>Ends</Text>
-      <Pressable style={styles.dateButton} onPress={() => onPickerTargetChange("end")}>
-        <Text>{formatEventDateTimeFromDate(endTime)}</Text>
+      <Text style={authScreenStyles.fieldLabel}>Ends</Text>
+      <Pressable
+        style={styles.dateButton}
+        onPress={() => onPickerTargetChange("end")}
+        accessibilityRole="button"
+      >
+        <Text style={styles.dateButtonText}>{formatEventDateTimeFromDate(endTime)}</Text>
       </Pressable>
 
       {showPicker && (Platform.OS === "ios" || androidStep) ? (
-        <DateTimePicker
-          value={activeDate}
-          mode={pickerMode}
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          minimumDate={pickerTarget === "end" ? startTime : undefined}
-          onChange={onPickerChange}
-        />
+        <View style={styles.pickerWrap}>
+          <DateTimePicker
+            value={activeDate}
+            mode={pickerMode}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            minimumDate={pickerTarget === "end" ? startTime : undefined}
+            onChange={onPickerChange}
+          />
+        </View>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
-  label: { fontSize: 14, fontWeight: "600", color: "#374151", marginTop: 4 },
+  container: {
+    gap: 6,
+  },
+  descriptionInput: {
+    ...formStyles.inputPill,
+    borderRadius: spacing.inputRadius,
+    minHeight: 88,
+    paddingTop: 12,
+    textAlignVertical: "top",
+  },
   dateButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
+    ...formStyles.inputPill,
+    justifyContent: "center",
+  },
+  dateButtonText: {
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  pickerWrap: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.inputRadius,
+    overflow: "hidden",
+    marginTop: 4,
   },
 });

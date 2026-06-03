@@ -87,6 +87,12 @@ export const authScreenStyles = StyleSheet.create({
     textAlign: "center",
     marginTop: 2,
   },
+  hintText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    textAlign: "center",
+  },
   pillInput: {
     borderWidth: 0,
     backgroundColor: colors.white,

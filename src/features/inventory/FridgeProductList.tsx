@@ -164,13 +164,13 @@ const styles = StyleSheet.create({
   },
   productNotes: {
     fontSize: 13,
-    color: colors.inputText,
+    color: colors.textSecondary,
     fontStyle: "italic",
   },
   loader: { marginVertical: 24 },
   errorText: { color: colors.error, textAlign: "center" },
   emptyText: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     fontStyle: "italic",
     textAlign: "center",
     paddingVertical: 12,

@@ -32,6 +32,26 @@ import {
 
 export type HouseholdSwitchError = "profile_not_found";
 
+export type SwitchHouseholdOptions = {
+  skipCacheReset?: boolean;
+};
+
+let resetSessionInitCallback: (() => void) | null = null;
+let clearActiveHouseholdContextCallback: (() => void) | null = null;
+
+/** Clears session-init guard so the next tabs mount re-runs initializeSession. */
+export function resetSessionInit(): void {
+  resetSessionInitCallback?.();
+}
+
+/**
+ * Drops active household/profile pointers so mounted queries skip before cache clear.
+ * Keeps `households` list until exit flow refetches.
+ */
+export function clearActiveHouseholdContext(): void {
+  clearActiveHouseholdContextCallback?.();
+}
+
 type HouseholdContextValue = {
   activeHouseholdId: string | null;
   activeProfileId: string | null;
@@ -41,7 +61,10 @@ type HouseholdContextValue = {
   isLoading: boolean;
   isReady: boolean;
   setActiveHousehold: (householdId: string, profileId: string) => Promise<void>;
-  switchHousehold: (householdId: string) => Promise<HouseholdSwitchError | null>;
+  switchHousehold: (
+    householdId: string,
+    options?: SwitchHouseholdOptions,
+  ) => Promise<HouseholdSwitchError | null>;
   refreshHouseholds: () => Promise<void>;
   refreshActiveProfile: () => Promise<void>;
 };
@@ -183,7 +206,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   }, [activeProfileId]);
 
   const switchHousehold = useCallback(
-    async (householdId: string): Promise<HouseholdSwitchError | null> => {
+    async (
+      householdId: string,
+      options?: SwitchHouseholdOptions,
+    ): Promise<HouseholdSwitchError | null> => {
       let map = await getHouseholdProfileMap();
       let profileId: string | null = map[householdId] ?? null;
 
@@ -209,7 +235,9 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       if (!profileId) return "profile_not_found";
 
       await setActiveHousehold(householdId, profileId);
-      await apolloClient.resetStore();
+      if (!options?.skipCacheReset) {
+        await apolloClient.resetStore();
+      }
       return null;
     },
     [households, setActiveHousehold],
@@ -242,11 +270,6 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       }
 
       if (!householdId || !profileId) {
-        if (__DEV__) {
-          console.warn(
-            "[HouseholdProvider] No household session — could not resolve profileId",
-          );
-        }
         setActiveHouseholdId(null);
         setActiveProfileId(null);
         setHousehold(null);
@@ -284,6 +307,23 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [applyHouseholdList]);
+
+  useEffect(() => {
+    resetSessionInitCallback = () => {
+      sessionInitDoneRef.current = false;
+    };
+    clearActiveHouseholdContextCallback = () => {
+      setActiveHouseholdId(null);
+      setActiveProfileId(null);
+      setHousehold(null);
+      setProfile(null);
+      setIsReady(false);
+    };
+    return () => {
+      resetSessionInitCallback = null;
+      clearActiveHouseholdContextCallback = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading || isOnboardingLoading) return;

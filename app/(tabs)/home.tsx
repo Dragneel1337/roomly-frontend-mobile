@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyText: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     textAlign: "center",
     fontSize: 14,
   },
@@ -190,11 +190,11 @@ const styles = StyleSheet.create({
   },
   itemMeta: {
     fontSize: 12,
-    color: colors.inputText,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   itemMetaSecondary: {
     fontSize: 12,
-    color: colors.inputText,
+    color: colors.textSecondary,
   },
 });

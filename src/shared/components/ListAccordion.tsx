@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { colors } from "@/src/shared/theme/colors";
 
 type ListAccordionProps = {
   title: string;
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
   },
-  chevron: { fontSize: 12, color: "#6b7280", width: 16 },
+  chevron: { fontSize: 12, color: colors.textSecondary, width: 16 },
   title: { fontSize: 17, fontWeight: "700", flex: 1 },
   headerRight: { marginLeft: "auto" },
   body: { gap: 8 },

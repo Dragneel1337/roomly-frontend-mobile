@@ -2,6 +2,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ActiveProfile } from "@/src/features/profile/profileApi";
 import { AvatarImagePreview } from "@/src/features/profile/AvatarImagePreview";
 import {
+  avatarSizes,
+  getAvatarProfileCardStageHeight,
+} from "@/src/features/profile/avatarDisplay";
+import {
   normalizeCatalogColor,
   resolveHexForDisplay,
 } from "@/src/features/profile/avatarColorCatalog";
@@ -23,7 +27,13 @@ export function ProfileViewCard({ profile, onCustomize }: ProfileViewCardProps) 
   return (
     <View style={authScreenStyles.profileCard}>
       <View style={styles.hero}>
-        <AvatarImagePreview avatarName={profile.avatar.name} color={color} />
+        <AvatarImagePreview
+          avatarName={profile.avatar.name}
+          color={color}
+          size={avatarSizes.profile}
+          picker
+          compactStage
+        />
       </View>
 
       <Text style={styles.nickname}>{profile.nickname}</Text>
@@ -81,14 +91,19 @@ export function ProfileEditActions({
 
 const styles = StyleSheet.create({
   hero: {
+    width: "100%",
+    height: getAvatarProfileCardStageHeight(avatarSizes.profile),
     alignItems: "center",
-    marginBottom: 4,
+    justifyContent: "center",
+    overflow: "hidden",
+    marginBottom: 0,
   },
   nickname: {
     fontSize: 22,
     fontWeight: "700",
     color: colors.textPrimary,
     textAlign: "center",
+    marginTop: -4,
   },
   colorRow: {
     flexDirection: "row",

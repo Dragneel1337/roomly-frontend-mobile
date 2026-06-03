@@ -77,13 +77,22 @@ export const apolloClient = new ApolloClient({
            * and we always want the newest list to replace the old one.
            */
           households: { merge: false },
+          household: {
+            keyArgs: ["householdId"],
+          },
+          householdByJoinCode: {
+            keyArgs: ["joinCode"],
+          },
         },
       },
+      Household: { keyFields: ["id"] },
+      Profile: { keyFields: ["id"] },
       Avatar: { keyFields: false },
       Color: { keyFields: false },
       AvatarsAndColors: { keyFields: false },
       ShoppingList: { keyFields: ["id"] },
       ShoppingListItem: { keyFields: ["id"] },
+      Inventory: { keyFields: ["id"] },
       Product: { keyFields: ["id"] },
     },
   }),

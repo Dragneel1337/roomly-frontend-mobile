@@ -1,38 +1,29 @@
-import { Image } from "expo-image";
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet } from "react-native";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
+import { AvatarCircle } from "@/src/features/profile/AvatarCircle";
+import { avatarSizes } from "@/src/features/profile/avatarDisplay";
 import { buildAvatarImageUrl } from "@/src/features/profile/avatarImageUrl";
-import { colors } from "@/src/shared/theme/colors";
-
-const DEFAULT_SIZE = 40;
 
 type ProfileHeaderAvatarProps = {
   size?: number;
   onPress: () => void;
 };
 
-export function ProfileHeaderAvatar({ size = DEFAULT_SIZE, onPress }: ProfileHeaderAvatarProps) {
+export function ProfileHeaderAvatar({
+  size = avatarSizes.header,
+  onPress,
+}: ProfileHeaderAvatarProps) {
   const { profile } = useHousehold();
-  const [failedUri, setFailedUri] = useState<string | null>(null);
-
-  const avatarName = profile?.avatar.name ?? null;
-  const ringColor = profile?.avatar.colorHex ?? colors.inputBackground;
+  const [failed, setFailed] = useState(false);
 
   const imageUri = useMemo(() => {
-    if (!avatarName || !profile) return null;
-    return buildAvatarImageUrl(avatarName, {
+    if (!profile?.avatar.name || failed) return null;
+    return buildAvatarImageUrl(profile.avatar.name, {
       name: profile.avatar.colorName,
       hex: profile.avatar.colorHex,
     });
-  }, [avatarName, profile]);
-
-  useEffect(() => {
-    setFailedUri(null);
-  }, [imageUri]);
-
-  const showImage = imageUri && imageUri !== failedUri;
+  }, [profile, failed]);
 
   return (
     <Pressable
@@ -40,56 +31,24 @@ export function ProfileHeaderAvatar({ size = DEFAULT_SIZE, onPress }: ProfileHea
       accessibilityRole="button"
       accessibilityLabel="Open profile"
       hitSlop={8}
-      style={[styles.hit, { width: size, height: size }]}
+      style={styles.hit}
     >
-      <View
-        style={[
-          styles.ring,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderColor: ringColor,
-          },
-        ]}
-      >
-        <View style={styles.inner}>
-          {showImage ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.image}
-              contentFit="cover"
-              onError={() => setFailedUri(imageUri)}
-            />
-          ) : (
-            <Ionicons name="person" size={size * 0.45} color={colors.inputText} />
-          )}
-        </View>
-      </View>
+      <AvatarCircle
+        uri={imageUri}
+        size={size}
+        variant="header"
+        avatarName={profile?.avatar.name}
+        onError={() => setFailed(true)}
+      />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   hit: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ring: {
-    borderWidth: 3,
-    padding: 2,
-    backgroundColor: colors.white,
-  },
-  inner: {
-    flex: 1,
-    borderRadius: 999,
-    overflow: "hidden",
-    backgroundColor: colors.inputBackground,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
     width: "100%",
-    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
   },
 });

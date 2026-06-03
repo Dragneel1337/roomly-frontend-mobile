@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   loader: { marginVertical: 40 },
   emptyText: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     textAlign: "center",
   },
 });

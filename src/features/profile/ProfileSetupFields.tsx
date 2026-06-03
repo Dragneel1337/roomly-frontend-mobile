@@ -6,6 +6,12 @@ import {
   resolveHexForDisplay,
 } from "@/src/features/profile/avatarColorCatalog";
 import {
+  avatarSizes,
+  getAvatarPickerStageHeight,
+  getAvatarPickerStageWidth,
+  profilePickerChevronHeight,
+} from "@/src/features/profile/avatarDisplay";
+import {
   isAvatarTaken,
   isColorTaken,
   type OwnProfileSelection,
@@ -88,17 +94,25 @@ export function ProfileSetupFields({ setup, variant = "create" }: ProfileSetupFi
             onPress={() => cycleAvatar(-1)}
             style={styles.chevronHit}
           >
-            <NavChevronIcon direction="left" height={26} style={styles.chevronLeft} />
+            <NavChevronIcon
+              direction="left"
+              height={profilePickerChevronHeight}
+              style={styles.chevronLeft}
+            />
           </Pressable>
         ) : (
           <View style={styles.chevronSpacer} />
         )}
 
-        <AvatarImagePreview
-          avatarName={selectedAvatarName}
-          color={selectedColor}
-          dimmed={avatarTaken}
-        />
+        <View style={styles.avatarStage}>
+          <AvatarImagePreview
+            avatarName={selectedAvatarName}
+            color={selectedColor}
+            dimmed={avatarTaken}
+            size={avatarSizes.profile}
+            picker
+          />
+        </View>
 
         {canCycleAvatars ? (
           <Pressable
@@ -107,22 +121,28 @@ export function ProfileSetupFields({ setup, variant = "create" }: ProfileSetupFi
             onPress={() => cycleAvatar(1)}
             style={styles.chevronHit}
           >
-            <NavChevronIcon direction="right" height={26} style={styles.chevronRight} />
+            <NavChevronIcon
+              direction="right"
+              height={profilePickerChevronHeight}
+              style={styles.chevronRight}
+            />
           </Pressable>
         ) : (
           <View style={styles.chevronSpacer} />
         )}
       </View>
 
-      <FormTextField
-        variant="pill"
-        value={nickname}
-        onChangeText={setNickname}
-        onBlur={() => form.touch("nickname")}
-        placeholder="Name"
-        error={form.getError("nickname")}
-        showError={form.showError("nickname")}
-      />
+      <View style={styles.nameFieldWrap}>
+        <FormTextField
+          variant="pill"
+          value={nickname}
+          onChangeText={setNickname}
+          onBlur={() => form.touch("nickname")}
+          placeholder="Name"
+          error={form.getError("nickname")}
+          showError={form.showError("nickname")}
+        />
+      </View>
 
       <Text style={authScreenStyles.fieldLabel}>Choose color</Text>
       <ColorSwatchGrid
@@ -217,15 +237,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    marginVertical: 4,
+    gap: 4,
+    marginTop: 4,
+    marginBottom: 0,
+  },
+  avatarStage: {
+    width: getAvatarPickerStageWidth(avatarSizes.profile),
+    height: getAvatarPickerStageHeight(avatarSizes.profile),
+    alignItems: "center",
+    justifyContent: "center",
   },
   chevronHit: {
-    padding: 4,
+    width: profilePickerChevronHeight + 12,
+    height: getAvatarPickerStageHeight(avatarSizes.profile),
+    alignItems: "center",
+    justifyContent: "center",
   },
   chevronSpacer: {
-    width: 34,
-    height: 34,
+    width: profilePickerChevronHeight + 12,
+    height: getAvatarPickerStageHeight(avatarSizes.profile),
   },
   chevronLeft: {
     marginLeft: 0,
@@ -233,20 +263,20 @@ const styles = StyleSheet.create({
   chevronRight: {
     marginLeft: 0,
   },
+  nameFieldWrap: {
+    marginTop: 4,
+  },
   colorGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    columnGap: 18,
-    rowGap: 18,
     marginTop: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   swatchCell: {
-    width: "22%",
-    minWidth: 56,
-    maxWidth: 68,
+    width: "25%",
     alignItems: "center",
+    marginBottom: 18,
     paddingVertical: 2,
   },
   swatch: {

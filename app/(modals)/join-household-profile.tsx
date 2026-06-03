@@ -5,11 +5,11 @@ import { joinHouseholdWithProfile } from "@/src/features/household/joinHousehold
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { ProfileSetupFields } from "@/src/features/profile/ProfileSetupFields";
 import { useProfileSetup } from "@/src/features/profile/useProfileSetup";
-import { apolloClient } from "@/src/shared/api/apolloClient";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { ModalScreen } from "@/src/shared/components/ModalScreen";
+import { resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -51,13 +51,7 @@ export default function JoinHouseholdProfileModal() {
 
       await setActiveHousehold(householdId, profileId);
       await refreshHouseholds();
-      await apolloClient.resetStore();
-
-      if (router.canDismiss()) {
-        router.dismissAll();
-      } else {
-        router.back();
-      }
+      resetToTabs(router);
     } catch (e: unknown) {
       setSubmitError(getUserFacingErrorMessage(e, "Could not join household"));
     } finally {

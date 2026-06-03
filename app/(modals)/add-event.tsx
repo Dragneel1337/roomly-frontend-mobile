@@ -1,16 +1,20 @@
+import { Stack } from "expo-router";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EventAttendeePicker } from "@/src/features/calendar/EventAttendeePicker";
 import { EventFormFields } from "@/src/features/calendar/EventFormFields";
 import { createEvent } from "@/src/features/calendar/eventsApi";
 import { toGraphQLDateTimeString } from "@/src/features/calendar/eventDateUtils";
 import { useHouseholdMemberOptions } from "@/src/features/calendar/useHouseholdMemberOptions";
+import { TabAppHeader } from "@/src/features/household/TabAppHeader";
 import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
-import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { Screen } from "@/src/shared/components/Screen";
+import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
 
 function defaultEnd(start: Date): Date {
   const end = new Date(start);
@@ -20,6 +24,7 @@ function defaultEnd(start: Date): Date {
 
 export default function AddEventModal() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { activeHouseholdId } = useHousehold();
   const { inviteOptions, organizer, loading: membersLoading, error: membersError } =
     useHouseholdMemberOptions();
@@ -78,45 +83,78 @@ export default function AddEventModal() {
   }
 
   return (
-    <ModalScreen title="Add event">
-      <ScrollView contentContainerStyle={modalScreenStyles.container}>
-        <EventFormFields
-          name={name}
-          onNameChange={setName}
-          description={description}
-          onDescriptionChange={setDescription}
-          startTime={startTime}
-          endTime={endTime}
-          onStartTimeChange={(d) => {
-            setStartTime(d);
-            if (endTime.getTime() <= d.getTime()) {
-              setEndTime(defaultEnd(d));
-            }
-          }}
-          onEndTimeChange={setEndTime}
-          pickerTarget={pickerTarget}
-          onPickerTargetChange={setPickerTarget}
-          nameError={nameError}
-        />
+    <>
+      <Stack.Screen
+        options={{
+          header: () => <TabAppHeader showBack showHouseholdSubheader={false} />,
+        }}
+      />
+      <Screen withStackHeader>
+        <ScrollView
+          contentContainerStyle={[
+            authScreenStyles.scrollContent,
+            styles.scroll,
+            { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={authScreenStyles.centerBlock}>
+            <View style={authScreenStyles.profileCard}>
+              <Text style={authScreenStyles.cardTitle}>Add event</Text>
 
-        <EventAttendeePicker
-          members={inviteOptions}
-          selectedIds={selectedAttendeeIds}
-          onToggle={toggleAttendee}
-          loading={membersLoading}
-          error={membersError ? getUserFacingErrorMessage(membersError, "Could not load members") : null}
-          organizerNickname={organizer?.nickname}
-        />
+              <EventFormFields
+                name={name}
+                onNameChange={setName}
+                description={description}
+                onDescriptionChange={setDescription}
+                startTime={startTime}
+                endTime={endTime}
+                onStartTimeChange={(d) => {
+                  setStartTime(d);
+                  if (endTime.getTime() <= d.getTime()) {
+                    setEndTime(defaultEnd(d));
+                  }
+                }}
+                onEndTimeChange={setEndTime}
+                pickerTarget={pickerTarget}
+                onPickerTargetChange={setPickerTarget}
+                nameError={nameError}
+              />
 
-        {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
-        <View style={styles.submitWrap}>
-          <FormSubmitButton label="Create event" onPress={() => void onSubmit()} loading={saving} />
-        </View>
-      </ScrollView>
-    </ModalScreen>
+              <EventAttendeePicker
+                members={inviteOptions}
+                selectedIds={selectedAttendeeIds}
+                onToggle={toggleAttendee}
+                loading={membersLoading}
+                error={
+                  membersError
+                    ? getUserFacingErrorMessage(membersError, "Could not load members")
+                    : null
+                }
+                organizerNickname={organizer?.nickname}
+              />
+
+              {!!submitError && <Text style={formStyles.submitError}>{submitError}</Text>}
+
+              <FormSubmitButton
+                label="Create event"
+                loadingLabel="Creating..."
+                onPress={() => void onSubmit()}
+                loading={saving}
+                disabled={saving}
+                style={authScreenStyles.submitButton}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  submitWrap: { marginTop: 16 },
+  scroll: {
+    flexGrow: 1,
+  },
 });

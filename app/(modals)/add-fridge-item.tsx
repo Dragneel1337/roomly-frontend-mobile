@@ -148,9 +148,9 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
   },
-  searchingText: { color: colors.inputText, fontSize: 15 },
+  searchingText: { color: colors.textSecondary, fontSize: 15 },
   emptyResults: {
-    color: colors.inputText,
+    color: colors.textSecondary,
     textAlign: "center",
     paddingTop: 12,
     fontSize: 15,

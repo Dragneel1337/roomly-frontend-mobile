@@ -1,13 +1,20 @@
-import { useRouter } from "expo-router";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter, useSegments } from "expo-router";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HouseholdSubheader } from "@/src/features/household/HouseholdSubheader";
 import { ProfileHeaderAvatar } from "@/src/features/profile/ProfileHeaderAvatar";
+import {
+  getAvatarHeaderRowMinHeight,
+  getAvatarHeaderStageWidth,
+} from "@/src/features/profile/avatarDisplay";
+import { RoomlyHeaderBrand } from "@/src/shared/components/RoomlyHeaderBrand";
 import { HeaderBackChevronIcon } from "@/src/shared/navigation/HeaderBackChevronIcon";
 import { colors } from "@/src/shared/theme/colors";
 import { routes } from "@/src/shared/routes";
 
 const HEADER_SIDE_WIDTH = 48;
+const HEADER_AVATAR_SLOT_WIDTH = getAvatarHeaderStageWidth();
+const HEADER_ROW_MIN_HEIGHT = getAvatarHeaderRowMinHeight();
 
 type TabAppHeaderProps = {
   showBack?: boolean;
@@ -15,17 +22,33 @@ type TabAppHeaderProps = {
   showHouseholdSubheader?: boolean;
 };
 
+function getMainTabSegment(segments: string[]): string | null {
+  const tabsIndex = segments.indexOf("(tabs)");
+  if (tabsIndex < 0) return null;
+  return segments[tabsIndex + 1] ?? "home";
+}
+
 export function TabAppHeader({
   showBack = false,
   onBackPress,
   showHouseholdSubheader = true,
 }: TabAppHeaderProps) {
   const router = useRouter();
+  const segments = useSegments();
   const insets = useSafeAreaInsets();
+
+  const mainTab = getMainTabSegment(segments as string[]);
+  const isHomeTab = mainTab === "home";
+  const showBackToHome = mainTab != null && !isHomeTab;
+  const showBackChevron = showBack || showBackToHome;
 
   function handleBack() {
     if (onBackPress) {
       onBackPress();
+      return;
+    }
+    if (showBackToHome) {
+      router.navigate(routes.tabs.home);
       return;
     }
     router.back();
@@ -36,12 +59,12 @@ export function TabAppHeader({
       <View style={[styles.bar, headerBarShadow, { paddingTop: insets.top }]}>
         <View style={styles.row}>
           <View style={styles.sideSlot}>
-            {showBack ? (
+            {showBackChevron ? (
               <Pressable
                 onPress={handleBack}
                 hitSlop={12}
                 accessibilityRole="button"
-                accessibilityLabel="Go back"
+                accessibilityLabel={showBackToHome && !onBackPress ? "Go to home" : "Go back"}
                 style={styles.backButton}
               >
                 <HeaderBackChevronIcon />
@@ -54,7 +77,7 @@ export function TabAppHeader({
             accessibilityRole="button"
             accessibilityLabel="Go to home"
           >
-            <Text style={styles.title}>#Roomly</Text>
+            <RoomlyHeaderBrand />
           </Pressable>
           <View style={[styles.sideSlot, styles.sideSlotRight]}>
             <ProfileHeaderAvatar onPress={() => router.push(routes.modals.profile)} />
@@ -84,6 +107,7 @@ const styles = StyleSheet.create({
   bar: {
     backgroundColor: colors.header,
     zIndex: 1,
+    overflow: "visible",
   },
   backButton: {
     padding: 4,
@@ -91,8 +115,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 48,
-    paddingHorizontal: 12,
+    minHeight: HEADER_ROW_MIN_HEIGHT,
+    paddingLeft: 12,
+    paddingRight: 8,
+    overflow: "visible",
   },
   sideSlot: {
     width: HEADER_SIDE_WIDTH,
@@ -100,17 +126,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sideSlotRight: {
-    alignItems: "flex-end",
+    width: HEADER_AVATAR_SLOT_WIDTH,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
   },
   titlePressable: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.onHeader,
-    textAlign: "center",
   },
 });

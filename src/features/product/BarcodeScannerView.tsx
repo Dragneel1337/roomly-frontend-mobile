@@ -2,6 +2,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { colors } from "@/src/shared/theme/colors";
 
 type BarcodeScannerViewProps = {
   onBarcodeScanned: (barcode: string) => void;
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
-  messageText: { textAlign: "center", color: "#374151" },
+  messageText: { textAlign: "center", color: colors.textSecondary },
   primaryButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,

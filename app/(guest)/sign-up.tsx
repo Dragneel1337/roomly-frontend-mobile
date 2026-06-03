@@ -15,7 +15,6 @@ import { ModalScreen } from "@/src/shared/components/ModalScreen";
 import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { routes } from "@/src/shared/routes";
 import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
-import { colors } from "@/src/shared/theme/colors";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type SignUpField = "email" | "password" | "repeatPassword";
@@ -164,10 +163,7 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   upgradeNote: {
-    fontSize: 13,
-    color: colors.inputText,
-    textAlign: "center",
-    lineHeight: 18,
+    ...authScreenStyles.hintText,
     marginTop: -8,
   },
 });

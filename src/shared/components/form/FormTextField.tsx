@@ -24,7 +24,7 @@ export function FormTextField({
       <TextInput
         {...inputProps}
         onBlur={onBlur}
-        placeholderTextColor={inputProps.placeholderTextColor ?? colors.inputText}
+        placeholderTextColor={inputProps.placeholderTextColor ?? colors.textSecondary}
         style={[
           isPill ? formStyles.inputPill : formStyles.input,
           hasError && (isPill ? formStyles.inputPillError : formStyles.inputError),

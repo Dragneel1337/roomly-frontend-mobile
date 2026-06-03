@@ -11,7 +11,6 @@ import { resetToOnboardingChoose, resetToTabs } from "@/src/shared/navigation/re
 import { routes } from "@/src/shared/routes";
 import { ModalScreen } from "@/src/shared/components/ModalScreen";
 import { authScreenStyles } from "@/src/shared/theme/authScreenStyles";
-import { colors } from "@/src/shared/theme/colors";
 import { useFormValidation } from "@/src/shared/validation/useFormValidation";
 
 type SignInField = "email" | "password";
@@ -142,10 +141,7 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   upgradeNote: {
-    fontSize: 13,
-    color: colors.inputText,
-    textAlign: "center",
-    lineHeight: 18,
+    ...authScreenStyles.hintText,
     marginTop: -8,
   },
 });

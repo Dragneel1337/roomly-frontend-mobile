@@ -17,7 +17,10 @@ import {
   leaveHousehold,
 } from "@/src/features/household/householdApi";
 import { completeHouseholdExit } from "@/src/features/household/householdExitFlow";
-import { useHousehold } from "@/src/features/household/HouseholdProvider";
+import {
+  clearActiveHouseholdContext,
+  useHousehold,
+} from "@/src/features/household/HouseholdProvider";
 import { useIsHouseholdOwner } from "@/src/features/household/useIsHouseholdOwner";
 import { SettingsActionRow } from "@/src/features/settings/SettingsActionRow";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
@@ -32,6 +35,14 @@ import { spacing } from "@/src/shared/theme/spacing";
 
 const TAB_SCROLL_EXTRA = 24;
 
+function mapHouseholdExitError(error: unknown, fallback: string): string {
+  const message = getUserFacingErrorMessage(error, fallback);
+  if (message.toLowerCase().includes("owner cannot leave")) {
+    return "As the household owner, delete the household instead of leaving.";
+  }
+  return message;
+}
+
 export function SettingsScreenContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -43,7 +54,13 @@ export function SettingsScreenContent() {
     switchHousehold,
     refreshHouseholds,
   } = useHousehold();
-  const { isOwner, loading: ownerLoading } = useIsHouseholdOwner();
+  const {
+    isOwner,
+    loading: ownerLoading,
+    ownerResolved,
+    ownerCheckFailed,
+    retryOwnerCheck,
+  } = useIsHouseholdOwner();
   const [exiting, setExiting] = useState(false);
   const [exitError, setExitError] = useState<string | null>(null);
 
@@ -96,12 +113,13 @@ export function SettingsScreenContent() {
         router,
         authMode,
         removedHouseholdId: activeHouseholdId,
+        clearActiveHouseholdContext,
         switchHousehold,
         refreshHouseholds,
         onNoHouseholdsLeft: resetOnboarding,
       });
     } catch (e: unknown) {
-      setExitError(getUserFacingErrorMessage(e, "Could not delete household"));
+      setExitError(mapHouseholdExitError(e, "Could not delete household"));
     } finally {
       setExiting(false);
     }
@@ -117,19 +135,24 @@ export function SettingsScreenContent() {
         router,
         authMode,
         removedHouseholdId: activeHouseholdId,
+        clearActiveHouseholdContext,
         switchHousehold,
         refreshHouseholds,
         onNoHouseholdsLeft: resetOnboarding,
       });
     } catch (e: unknown) {
-      setExitError(getUserFacingErrorMessage(e, "Could not leave household"));
+      setExitError(mapHouseholdExitError(e, "Could not leave household"));
     } finally {
       setExiting(false);
     }
   }
 
   const showHouseholdActions =
-    !!household && !!activeHouseholdId && !!activeProfileId && !ownerLoading;
+    !!household &&
+    !!activeHouseholdId &&
+    !!activeProfileId &&
+    ownerResolved &&
+    !ownerLoading;
 
   return (
     <ScrollView
@@ -188,6 +211,19 @@ export function SettingsScreenContent() {
               )
             ) : ownerLoading ? (
               <ActivityIndicator color={colors.textPrimary} style={styles.ownerLoading} />
+            ) : ownerCheckFailed ? (
+              <View style={styles.ownerCheckFailed}>
+                <Text style={formStyles.submitError}>
+                  Could not verify your role in this household.
+                </Text>
+                <Pressable
+                  style={styles.retryButton}
+                  onPress={() => void retryOwnerCheck()}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.retryText}>Try again</Text>
+                </Pressable>
+              </View>
             ) : null}
           </View>
         </View>
@@ -280,7 +316,7 @@ const styles = StyleSheet.create({
   joinCodeLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: colors.inputText,
+    color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
@@ -310,6 +346,21 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   ownerLoading: { marginTop: 8 },
+  ownerCheckFailed: {
+    marginTop: 8,
+    alignItems: "center",
+    gap: 10,
+  },
+  retryButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  retryText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    textDecorationLine: "underline",
+  },
   accountHint: {
     fontSize: 14,
     lineHeight: 20,

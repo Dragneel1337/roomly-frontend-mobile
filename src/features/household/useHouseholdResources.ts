@@ -11,6 +11,8 @@ export function useHouseholdResources(): {
   resources: HouseholdResources | null;
   loading: boolean;
   error: Error | undefined;
+  ownerProfileId: string | null;
+  ownerResolved: boolean;
   refetch: () => Promise<void>;
 } {
   const { activeHouseholdId, activeProfileId } = useHousehold();
@@ -26,10 +28,15 @@ export function useHouseholdResources(): {
     return mapHouseholdResources(data.household, activeProfileId);
   }, [data, activeProfileId]);
 
+  const ownerProfileId = data?.household?.owner?.id ?? null;
+  const ownerResolved = !loading && !error && !!data?.household;
+
   return {
     resources,
     loading,
     error: error as Error | undefined,
+    ownerProfileId,
+    ownerResolved,
     refetch: async () => {
       await refetch();
     },

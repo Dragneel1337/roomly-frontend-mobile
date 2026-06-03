@@ -13,6 +13,7 @@ import { QuantityStepper } from "@/src/features/shoppingList/QuantityStepper";
 import { useShoppingList } from "@/src/features/shoppingList/useShoppingList";
 import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMessage";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { colors } from "@/src/shared/theme/colors";
 
 type ShoppingListSectionProps = {
   title: string;
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#374151" },
+  sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
   moveButtonText: { color: "#047857", fontWeight: "600", fontSize: 13 },
   loader: { marginVertical: 12 },
   errorText: { color: "#dc2626" },
-  emptyText: { color: "#6b7280", fontStyle: "italic" },
+  emptyText: { color: colors.textSecondary, fontStyle: "italic" },
   list: { gap: 10 },
   item: {
     flexDirection: "row",
@@ -324,8 +325,8 @@ const styles = StyleSheet.create({
   checkboxMark: { fontSize: 18 },
   itemBody: { flex: 1, gap: 4 },
   itemTitle: { fontSize: 16, fontWeight: "600" },
-  itemMeta: { color: "#6b7280", fontSize: 14 },
-  itemNotes: { color: "#374151", fontSize: 13, fontStyle: "italic" },
+  itemMeta: { color: colors.textSecondary, fontSize: 14 },
+  itemNotes: { color: colors.textSecondary, fontSize: 13, fontStyle: "italic" },
   itemActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,5 +350,5 @@ const styles = StyleSheet.create({
   },
   removeButtonDisabled: { opacity: 0.6 },
   removeButtonText: { color: "#dc2626", fontWeight: "600", fontSize: 13 },
-  readonlyCount: { color: "#6b7280", marginTop: 4 },
+  readonlyCount: { color: colors.textSecondary, marginTop: 4 },
 });

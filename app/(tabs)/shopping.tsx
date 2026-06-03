@@ -21,6 +21,7 @@ import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMe
 import { Screen } from "@/src/shared/components/Screen";
 import { TAB_TOTAL_HEIGHT } from "@/src/shared/navigation/tabBarLayout";
 import { routes } from "@/src/shared/routes";
+import { colors } from "@/src/shared/theme/colors";
 
 const FAB_GAP_ABOVE_TAB = 24;
 
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#eee",
   },
-  othersLabel: { fontSize: 15, fontWeight: "600", color: "#374151" },
+  othersLabel: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
   errorText: { color: "#dc2626", textAlign: "center" },
   retryButton: {
     paddingVertical: 10,

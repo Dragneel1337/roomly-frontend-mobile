@@ -29,6 +29,7 @@ import { getUserFacingErrorMessage } from "@/src/shared/api/getUserFacingErrorMe
 import { FormSubmitButton } from "@/src/shared/components/form/FormSubmitButton";
 import { formStyles } from "@/src/shared/components/form/formStyles";
 import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
+import { colors } from "@/src/shared/theme/colors";
 
 function attendeeIdsFromEvent(event: HouseholdEvent): Set<string> {
   return new Set((event.attendees ?? []).map((a) => a.id));
@@ -242,8 +243,8 @@ export default function EventDetailModal() {
 
 const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "700" },
-  body: { color: "#374151", marginTop: 8 },
-  meta: { color: "#6b7280", marginTop: 6, fontSize: 14 },
+  body: { color: colors.textSecondary, marginTop: 8 },
+  meta: { color: colors.textSecondary, marginTop: 6, fontSize: 14 },
   actions: { marginTop: 24, gap: 10 },
   primaryButton: {
     backgroundColor: "#2563eb",

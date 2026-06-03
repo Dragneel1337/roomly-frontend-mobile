@@ -5,6 +5,7 @@ import { useHousehold } from "@/src/features/household/HouseholdProvider";
 import { resetToTabs } from "@/src/shared/navigation/resetRoutes";
 import { ModalScreen, modalScreenStyles } from "@/src/shared/components/ModalScreen";
 import { formStyles } from "@/src/shared/components/form/formStyles";
+import { colors } from "@/src/shared/theme/colors";
 
 export default function SwitchHouseholdModal() {
   const router = useRouter();
@@ -75,5 +76,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#eff6ff",
   },
   itemTitle: { fontSize: 16, fontWeight: "600" },
-  itemMeta: { color: "#6b7280", marginTop: 4, fontSize: 13 },
+  itemMeta: { color: colors.textSecondary, marginTop: 4, fontSize: 13 },
 });

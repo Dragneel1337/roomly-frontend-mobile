@@ -23,6 +23,7 @@ export type HouseholdResources = {
 
 type HouseholdResourcesResult = {
   household: {
+    id: string;
     sharedShoppingList: { id: number };
     sharedInventory: { id: number };
     owner: {
@@ -48,6 +49,7 @@ export const HOUSEHOLD_RESOURCES: TypedDocumentNode<
 > = gql`
   query HouseholdResources($householdId: String!) {
     household(householdId: $householdId) {
+      id
       sharedShoppingList {
         id
       }
