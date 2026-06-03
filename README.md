@@ -10,7 +10,7 @@ Expo / React Native client for **Roomly** — shared household management (shopp
 
 This repository contains **only the mobile app**. It talks to the **ROOMLY API** (GraphQL + REST) over `EXPO_PUBLIC_API_BASE_URL`.
 
-The backend lives in a **separate project** — [ROOMLY-API-main](../ROOMLY-API-main/). That folder is not part of this repo; in this workspace it is usually a **local copy for reference** (schema, docs, running the server locally). **How to install, configure, and run the API** is documented there: [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md). Do not look here for Gradle, JWT, or database setup.
+The backend lives in a **separate project** — [ROOMLY-API-main](../ROOMLY-API-main/). **How to install, configure, and run the API** is documented there: [ROOMLY-API-main/README.md](../ROOMLY-API-main/README.md). Do not look here for Gradle, JWT, or database setup.
 
 ---
 
